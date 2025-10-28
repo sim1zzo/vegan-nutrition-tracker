@@ -37,9 +37,19 @@ export const authAPI = {
 
 // ==================== GIORNATE ====================
 export const giornateAPI = {
-  getGiornataByData: (data) => api.get('/giornate', { params: { data } }),
+  // Modifica per accettare un oggetto di parametri per flessibilità
+  getGiornate: (params) => api.get('/giornate', { params }),
+  getGiornataByData: (data) => api.get('/giornate', { params: { data } }), // Mantieni per compatibilità se usata altrove
   creaGiornata: (dati) => api.post('/giornate', dati),
   aggiornaGiornata: (id, dati) => api.put(`/giornate/${id}`, dati),
+};
+
+// ==================== ALIMENTI ==================== // <-- NUOVO
+export const alimentiAPI = {
+  getAlimenti: () => api.get('/alimenti'),
+  creaAlimento: (dati) => api.post('/alimenti', dati),
+  aggiornaAlimento: (id, dati) => api.put(`/alimenti/${id}`, dati),
+  eliminaAlimento: (id) => api.delete(`/alimenti/${id}`),
 };
 
 export default api;

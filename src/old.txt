@@ -1,0 +1,2795 @@
+import React, { useState, useMemo } from 'react';
+import {
+  Calendar,
+  Coffee,
+  Apple,
+  Utensils,
+  Cookie,
+  Moon,
+  Plus,
+  Trash2,
+  TrendingUp,
+  Activity,
+  AlertCircle,
+  Lightbulb,
+  Target,
+  Pill,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+
+// Database completo alimenti vegani - AGGIORNATO CON DATI PDF
+const ALIMENTI_DATABASE = {
+  // COLAZIONE
+  'Avena (fiocchi)': {
+    categoria: 'colazione',
+    proteine: 13.2,
+    carboidrati: 58.7,
+    grassi: 7,
+    fibre: 10.1,
+    ferro: 3.8,
+    calcio: 53,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0.5,
+    zinco: 3,
+    calorie: 389,
+    porzione: 40,
+  },
+  'Latte di soia': {
+    categoria: 'colazione',
+    proteine: 3.3,
+    carboidrati: 1.8,
+    grassi: 1.9,
+    fibre: 0.6,
+    ferro: 0.6,
+    calcio: 120,
+    vitB12: 0.4,
+    vitB2: 0.1,
+    vitD: 0.75,
+    omega3: 0.1,
+    iodio: 2,
+    zinco: 0.3,
+    calorie: 33,
+    porzione: 200,
+  },
+  'Latte di avena': {
+    categoria: 'colazione',
+    proteine: 1,
+    carboidrati: 6.5,
+    grassi: 1.5,
+    fibre: 0.8,
+    ferro: 0.3,
+    calcio: 120,
+    vitB12: 0.4,
+    vitB2: 0.08,
+    vitD: 0.75,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.2,
+    calorie: 47,
+    porzione: 200,
+  },
+  'Latte di mandorla': {
+    categoria: 'colazione',
+    proteine: 0.5,
+    carboidrati: 0.3,
+    grassi: 1.1,
+    fibre: 0.2,
+    ferro: 0.4,
+    calcio: 120,
+    vitB12: 0.4,
+    vitB2: 0.05,
+    vitD: 0.75,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.2,
+    calorie: 13,
+    porzione: 200,
+  },
+  'Yogurt soia': {
+    categoria: 'colazione',
+    proteine: 3.5,
+    carboidrati: 5,
+    grassi: 2,
+    fibre: 1,
+    ferro: 0.5,
+    calcio: 120,
+    vitB12: 0.3,
+    vitB2: 0.12,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2,
+    zinco: 0.4,
+    calorie: 50,
+    porzione: 125,
+  },
+  'Pane integrale': {
+    categoria: 'colazione',
+    proteine: 7.5,
+    carboidrati: 50,
+    grassi: 1.5,
+    fibre: 7,
+    ferro: 2.5,
+    calcio: 30,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2.5,
+    zinco: 1.8,
+    calorie: 247,
+    porzione: 50,
+  },
+  'Pane bianco': {
+    categoria: 'colazione',
+    proteine: 8.5,
+    carboidrati: 55,
+    grassi: 0.5,
+    fibre: 2.7,
+    ferro: 1.5,
+    calcio: 25,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1.5,
+    zinco: 0.9,
+    calorie: 265,
+    porzione: 50,
+  },
+  Marmellata: {
+    categoria: 'colazione',
+    proteine: 0.4,
+    carboidrati: 60,
+    grassi: 0.1,
+    fibre: 1,
+    ferro: 0.3,
+    calcio: 15,
+    vitB12: 0,
+    vitB2: 0.02,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0.5,
+    zinco: 0.1,
+    calorie: 250,
+    porzione: 20,
+  },
+  'Burro arachidi': {
+    categoria: 'colazione',
+    proteine: 25,
+    carboidrati: 20,
+    grassi: 50,
+    fibre: 8,
+    ferro: 2,
+    calcio: 43,
+    vitB12: 0,
+    vitB2: 0.15,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 3,
+    calorie: 588,
+    porzione: 20,
+  },
+  Banana: {
+    categoria: 'colazione',
+    proteine: 1.1,
+    carboidrati: 23,
+    grassi: 0.3,
+    fibre: 2.6,
+    ferro: 0.3,
+    calcio: 5,
+    vitB12: 0,
+    vitB2: 0.07,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0.5,
+    zinco: 0.2,
+    calorie: 89,
+    porzione: 120,
+  },
+  Mela: {
+    categoria: 'colazione',
+    proteine: 0.3,
+    carboidrati: 14,
+    grassi: 0.2,
+    fibre: 2.4,
+    ferro: 0.1,
+    calcio: 6,
+    vitB12: 0,
+    vitB2: 0.03,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0.3,
+    zinco: 0.04,
+    calorie: 52,
+    porzione: 150,
+  },
+  'Cereali integrali': {
+    categoria: 'colazione',
+    proteine: 10,
+    carboidrati: 70,
+    grassi: 3,
+    fibre: 10,
+    ferro: 8,
+    calcio: 50,
+    vitB12: 2,
+    vitB2: 0.4,
+    vitD: 1,
+    omega3: 0,
+    iodio: 3,
+    zinco: 3,
+    calorie: 350,
+    porzione: 40,
+  },
+  'Corn flakes': {
+    categoria: 'colazione',
+    proteine: 7.5,
+    carboidrati: 84,
+    grassi: 0.9,
+    fibre: 2.7,
+    ferro: 8,
+    calcio: 15,
+    vitB12: 2,
+    vitB2: 0.3,
+    vitD: 1.2,
+    omega3: 0,
+    iodio: 2.5,
+    zinco: 0.5,
+    calorie: 370,
+    porzione: 30,
+  },
+  'Semi di chia': {
+    categoria: 'colazione',
+    proteine: 17,
+    carboidrati: 42,
+    grassi: 31,
+    fibre: 34,
+    ferro: 7.7,
+    calcio: 631,
+    vitB12: 0,
+    vitB2: 0.18,
+    vitD: 0,
+    omega3: 18,
+    iodio: 5,
+    zinco: 4.6,
+    calorie: 486,
+    porzione: 15,
+  },
+  'Semi di girasole': {
+    categoria: 'colazione',
+    proteine: 21,
+    carboidrati: 20,
+    grassi: 51,
+    fibre: 8.6,
+    ferro: 5,
+    calcio: 92,
+    vitB12: 0,
+    vitB2: 0.36,
+    vitD: 0,
+    omega3: 0.07,
+    iodio: 5,
+    zinco: 5.8,
+    calorie: 584,
+    porzione: 20,
+  },
+  'Semi di zucca': {
+    categoria: 'colazione',
+    proteine: 19,
+    carboidrati: 54,
+    grassi: 19,
+    fibre: 18,
+    ferro: 9.1,
+    calcio: 78,
+    vitB12: 0,
+    vitB2: 0.32,
+    vitD: 0,
+    omega3: 0.12,
+    iodio: 12,
+    zinco: 8.2,
+    calorie: 446,
+    porzione: 20,
+  },
+  'Semi di lino': {
+    categoria: 'colazione',
+    proteine: 18,
+    carboidrati: 29,
+    grassi: 42,
+    fibre: 27,
+    ferro: 6.3,
+    calcio: 240,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 23,
+    iodio: 10,
+    zinco: 4.3,
+    calorie: 534,
+    porzione: 15,
+  },
+  'Cioccolato fondente 70%': {
+    categoria: 'colazione',
+    proteine: 7.8,
+    carboidrati: 45,
+    grassi: 43,
+    fibre: 11,
+    ferro: 6.6,
+    calcio: 48,
+    vitB12: 0,
+    vitB2: 0.15,
+    vitD: 0,
+    omega3: 0.03,
+    iodio: 2.3,
+    zinco: 2.2,
+    calorie: 599,
+    porzione: 20,
+  },
+  'Cioccolato fondente 85%': {
+    categoria: 'colazione',
+    proteine: 10.2,
+    carboidrati: 32,
+    grassi: 50,
+    fibre: 14,
+    ferro: 14.3,
+    calcio: 92,
+    vitB12: 0,
+    vitB2: 0.2,
+    vitD: 0,
+    omega3: 0.04,
+    iodio: 3,
+    zinco: 4.2,
+    calorie: 592,
+    porzione: 20,
+  },
+  'Cacao in polvere': {
+    categoria: 'colazione',
+    proteine: 20,
+    carboidrati: 58,
+    grassi: 14,
+    fibre: 33,
+    ferro: 12,
+    calcio: 110,
+    vitB12: 0,
+    vitB2: 0.4,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2.8,
+    zinco: 5.7,
+    calorie: 355,
+    porzione: 10,
+  },
+
+  // SPUNTINI - FRUTTA SECCA E SEMI
+  Mandorle: {
+    categoria: 'spuntino',
+    proteine: 21,
+    carboidrati: 22,
+    grassi: 49,
+    fibre: 12,
+    ferro: 4.8,
+    calcio: 270,
+    vitB12: 0,
+    vitB2: 0.44,
+    vitD: 0,
+    omega3: 0.01,
+    iodio: 2,
+    zinco: 6,
+    calorie: 579,
+    porzione: 30,
+  },
+  Noci: {
+    categoria: 'spuntino',
+    proteine: 15,
+    carboidrati: 14,
+    grassi: 65,
+    fibre: 6.7,
+    ferro: 3,
+    calcio: 78,
+    vitB12: 0.1,
+    vitB2: 0.14,
+    vitD: 0,
+    omega3: 9,
+    iodio: 2,
+    zinco: 4,
+    calorie: 654,
+    porzione: 30,
+  },
+  Nocciole: {
+    categoria: 'spuntino',
+    proteine: 15,
+    carboidrati: 17,
+    grassi: 61,
+    fibre: 9.7,
+    ferro: 5.4,
+    calcio: 58,
+    vitB12: 0,
+    vitB2: 0.22,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 0,
+    zinco: 3.1,
+    calorie: 628,
+    porzione: 30,
+  },
+  'Noci del Brasile': {
+    categoria: 'spuntino',
+    proteine: 14,
+    carboidrati: 12,
+    grassi: 67,
+    fibre: 7.5,
+    ferro: 3.1,
+    calcio: 160,
+    vitB12: 0,
+    vitB2: 0.03,
+    vitD: 0,
+    omega3: 0.02,
+    iodio: 2.5,
+    zinco: 4.3,
+    calorie: 656,
+    porzione: 30,
+  },
+  Anacardi: {
+    categoria: 'spuntino',
+    proteine: 18,
+    carboidrati: 30,
+    grassi: 44,
+    fibre: 3.3,
+    ferro: 3,
+    calcio: 9,
+    vitB12: 0,
+    vitB2: 0.17,
+    vitD: 0,
+    omega3: 0.06,
+    iodio: 0.2,
+    zinco: 2.6,
+    calorie: 553,
+    porzione: 30,
+  },
+  Pistacchi: {
+    categoria: 'spuntino',
+    proteine: 20,
+    carboidrati: 28,
+    grassi: 45,
+    fibre: 10,
+    ferro: 7,
+    calcio: 65,
+    vitB12: 0,
+    vitB2: 0.3,
+    vitD: 0,
+    omega3: 0.26,
+    iodio: 11,
+    zinco: 3.3,
+    calorie: 562,
+    porzione: 30,
+  },
+  Arachidi: {
+    categoria: 'spuntino',
+    proteine: 26,
+    carboidrati: 16,
+    grassi: 49,
+    fibre: 8.5,
+    ferro: 4.6,
+    calcio: 92,
+    vitB12: 0,
+    vitB2: 0.09,
+    vitD: 0,
+    omega3: 0.01,
+    iodio: 3.2,
+    zinco: 4,
+    calorie: 567,
+    porzione: 30,
+  },
+  Pinoli: {
+    categoria: 'spuntino',
+    proteine: 14,
+    carboidrati: 13,
+    grassi: 68,
+    fibre: 3.7,
+    ferro: 7.8,
+    calcio: 21,
+    vitB12: 0,
+    vitB2: 0.28,
+    vitD: 0,
+    omega3: 0.2,
+    iodio: 0.2,
+    zinco: 9,
+    calorie: 673,
+    porzione: 20,
+  },
+
+  // SPUNTINI - FRUTTA
+  Arancia: {
+    categoria: 'spuntino',
+    proteine: 0.9,
+    carboidrati: 12,
+    grassi: 0.1,
+    fibre: 2.4,
+    ferro: 0.1,
+    calcio: 40,
+    vitB12: 0,
+    vitB2: 0.04,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.07,
+    calorie: 47,
+    porzione: 150,
+  },
+  Kiwi: {
+    categoria: 'spuntino',
+    proteine: 1.1,
+    carboidrati: 15,
+    grassi: 0.5,
+    fibre: 3,
+    ferro: 0.3,
+    calcio: 34,
+    vitB12: 0,
+    vitB2: 0.05,
+    vitD: 0,
+    omega3: 0.04,
+    iodio: 2,
+    zinco: 0.1,
+    calorie: 61,
+    porzione: 100,
+  },
+  'Albicocche secche': {
+    categoria: 'spuntino',
+    proteine: 3.4,
+    carboidrati: 63,
+    grassi: 0.5,
+    fibre: 7.3,
+    ferro: 5.2,
+    calcio: 82,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0.08,
+    iodio: 2.7,
+    zinco: 0.4,
+    calorie: 241,
+    porzione: 40,
+  },
+  'Prugne secche': {
+    categoria: 'spuntino',
+    proteine: 2.2,
+    carboidrati: 64,
+    grassi: 0.4,
+    fibre: 7.1,
+    ferro: 2.9,
+    calcio: 50,
+    vitB12: 0,
+    vitB2: 0.2,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0.8,
+    zinco: 0.3,
+    calorie: 240,
+    porzione: 40,
+  },
+  'Fichi secchi': {
+    categoria: 'spuntino',
+    proteine: 3.3,
+    carboidrati: 58,
+    grassi: 0.9,
+    fibre: 9.8,
+    ferro: 2.5,
+    calcio: 160,
+    vitB12: 0,
+    vitB2: 0.09,
+    vitD: 0,
+    omega3: 0.2,
+    iodio: 4,
+    zinco: 0.9,
+    calorie: 249,
+    porzione: 40,
+  },
+  Datteri: {
+    categoria: 'spuntino',
+    proteine: 1.8,
+    carboidrati: 75,
+    grassi: 0.2,
+    fibre: 7,
+    ferro: 0.9,
+    calcio: 64,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1.5,
+    zinco: 0.4,
+    calorie: 282,
+    porzione: 40,
+  },
+
+  // SPUNTINI - ALTRO
+  'Crackers integrali': {
+    categoria: 'spuntino',
+    proteine: 10,
+    carboidrati: 65,
+    grassi: 10,
+    fibre: 8,
+    ferro: 3,
+    calcio: 40,
+    vitB12: 0,
+    vitB2: 0.12,
+    vitD: 0,
+    omega3: 0,
+    iodio: 3,
+    zinco: 2,
+    calorie: 380,
+    porzione: 30,
+  },
+
+  // PRANZO/CENA - LEGUMI (cotti)
+  'Lenticchie comuni (cotte)': {
+    categoria: 'pranzo',
+    proteine: 9,
+    carboidrati: 20.8,
+    grassi: 0.4,
+    fibre: 7.9,
+    ferro: 3.3,
+    calcio: 19,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.04,
+    iodio: 0.7,
+    zinco: 1.3,
+    calorie: 116,
+    porzione: 150,
+  },
+  'Lenticchie secche': {
+    categoria: 'pranzo',
+    proteine: 23.5,
+    carboidrati: 50,
+    grassi: 1.1,
+    fibre: 17,
+    ferro: 8,
+    calcio: 57,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 0.7,
+    zinco: 3.6,
+    calorie: 300,
+    porzione: 60,
+  },
+  'Ceci (cotti)': {
+    categoria: 'pranzo',
+    proteine: 8.9,
+    carboidrati: 27.4,
+    grassi: 2.6,
+    fibre: 7.6,
+    ferro: 2.9,
+    calcio: 49,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 0.6,
+    zinco: 1.5,
+    calorie: 164,
+    porzione: 150,
+  },
+  'Ceci secchi': {
+    categoria: 'pranzo',
+    proteine: 19,
+    carboidrati: 61,
+    grassi: 6.0,
+    fibre: 17,
+    ferro: 5.5,
+    calcio: 120,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.3,
+    iodio: 0.6,
+    zinco: 2.4,
+    calorie: 364,
+    porzione: 60,
+  },
+  'Fagioli (tutte le varietà, cotti)': {
+    categoria: 'pranzo',
+    proteine: 8,
+    carboidrati: 19.1,
+    grassi: 0.8,
+    fibre: 8.7,
+    ferro: 2.5,
+    calcio: 35,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 1.1,
+    zinco: 1.2,
+    calorie: 111,
+    porzione: 150,
+  },
+  'Fagioli secchi': {
+    categoria: 'pranzo',
+    proteine: 21,
+    carboidrati: 47,
+    grassi: 1.4,
+    fibre: 23,
+    ferro: 6.4,
+    calcio: 130,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0.3,
+    iodio: 1.1,
+    zinco: 3.2,
+    calorie: 281,
+    porzione: 60,
+  },
+  'Fagioli verdi (cotti)': {
+    categoria: 'pranzo',
+    proteine: 9.5,
+    carboidrati: 22,
+    grassi: 1.2,
+    fibre: 9,
+    ferro: 7.2,
+    calcio: 540,
+    vitB12: 0,
+    vitB2: 0.71,
+    vitD: 0,
+    omega3: 0.15,
+    iodio: 25,
+    zinco: 2.5,
+    calorie: 138,
+    porzione: 150,
+  },
+  'Fave secche': {
+    categoria: 'pranzo',
+    proteine: 26,
+    carboidrati: 58,
+    grassi: 1.5,
+    fibre: 25,
+    ferro: 6.7,
+    calcio: 103,
+    vitB12: 0,
+    vitB2: 0.3,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2,
+    zinco: 3.1,
+    calorie: 341,
+    porzione: 60,
+  },
+  'Piselli verdi (freschi/congelati)': {
+    categoria: 'pranzo',
+    proteine: 5,
+    carboidrati: 14,
+    grassi: 0.4,
+    fibre: 5,
+    ferro: 1.9,
+    calcio: 26,
+    vitB12: 0,
+    vitB2: 0.14,
+    vitD: 0,
+    omega3: 0.04,
+    iodio: 4.2,
+    zinco: 0.8,
+    calorie: 81,
+    porzione: 150,
+  },
+  'Piselli secchi': {
+    categoria: 'pranzo',
+    proteine: 23,
+    carboidrati: 60,
+    grassi: 1.4,
+    fibre: 23,
+    ferro: 4.4,
+    calcio: 55,
+    vitB12: 0,
+    vitB2: 0.18,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2,
+    zinco: 2.8,
+    calorie: 341,
+    porzione: 60,
+  },
+  'Soia (cotta)': {
+    categoria: 'pranzo',
+    proteine: 16.6,
+    carboidrati: 10.5,
+    grassi: 9,
+    fibre: 6,
+    ferro: 5.1,
+    calcio: 102,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 1.2,
+    iodio: 2,
+    zinco: 1.4,
+    calorie: 173,
+    porzione: 150,
+  },
+  'Soia secca': {
+    categoria: 'pranzo',
+    proteine: 36,
+    carboidrati: 30,
+    grassi: 20,
+    fibre: 9,
+    ferro: 6.6,
+    calcio: 200,
+    vitB12: 0,
+    vitB2: 0.46,
+    vitD: 0,
+    omega3: 1.6,
+    iodio: 6.3,
+    zinco: 4.2,
+    calorie: 446,
+    porzione: 60,
+  },
+  Tofu: {
+    categoria: 'pranzo',
+    proteine: 9,
+    carboidrati: 1.9,
+    grassi: 4.8,
+    fibre: 1,
+    ferro: 5.4,
+    calcio: 100,
+    vitB12: 0,
+    vitB2: 0.11,
+    vitD: 0,
+    omega3: 0.5,
+    iodio: 10,
+    zinco: 0.8,
+    calorie: 76,
+    porzione: 100,
+  },
+  Tempeh: {
+    categoria: 'pranzo',
+    proteine: 19,
+    carboidrati: 9,
+    grassi: 11,
+    fibre: 9,
+    ferro: 2.7,
+    calcio: 111,
+    vitB12: 0.08,
+    vitB2: 0.35,
+    vitD: 0,
+    omega3: 0.4,
+    iodio: 5,
+    zinco: 1.1,
+    calorie: 193,
+    porzione: 100,
+  },
+  Edamame: {
+    categoria: 'pranzo',
+    proteine: 12,
+    carboidrati: 9,
+    grassi: 5.2,
+    fibre: 5,
+    ferro: 2.3,
+    calcio: 63,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0.4,
+    iodio: 3,
+    zinco: 1,
+    calorie: 125,
+    porzione: 100,
+  },
+  Lupini: {
+    categoria: 'pranzo',
+    proteine: 16,
+    carboidrati: 16,
+    grassi: 3.8,
+    fibre: 14,
+    ferro: 1.8,
+    calcio: 45,
+    vitB12: 0,
+    vitB2: 0.15,
+    vitD: 0,
+    omega3: 0.08,
+    iodio: 2,
+    zinco: 2.1,
+    calorie: 148,
+    porzione: 100,
+  },
+  'Azuki (cotti)': {
+    categoria: 'pranzo',
+    proteine: 7.5,
+    carboidrati: 20,
+    grassi: 0.2,
+    fibre: 5,
+    ferro: 1.9,
+    calcio: 28,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0.04,
+    iodio: 1,
+    zinco: 1.7,
+    calorie: 120,
+    porzione: 150,
+  },
+  Cicerchie: {
+    categoria: 'pranzo',
+    proteine: 10.5,
+    carboidrati: 21.6,
+    grassi: 0.5,
+    fibre: 9,
+    ferro: 3.8,
+    calcio: 40,
+    vitB12: 0,
+    vitB2: 0.12,
+    vitD: 0,
+    omega3: 0.06,
+    iodio: 1.5,
+    zinco: 1.6,
+    calorie: 138,
+    porzione: 150,
+  },
+
+  // PRANZO/CENA - CEREALI (cotti)
+  'Pasta bianca (cotta)': {
+    categoria: 'pranzo',
+    proteine: 4.7,
+    carboidrati: 30.9,
+    grassi: 0.5,
+    fibre: 1.8,
+    ferro: 0.7,
+    calcio: 7,
+    vitB12: 0,
+    vitB2: 0.03,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.5,
+    calorie: 158,
+    porzione: 100,
+  },
+  'Pasta integrale (cotta)': {
+    categoria: 'pranzo',
+    proteine: 5.2,
+    carboidrati: 26.4,
+    grassi: 0.9,
+    fibre: 4,
+    ferro: 3.9,
+    calcio: 34,
+    vitB12: 0,
+    vitB2: 0.11,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2,
+    zinco: 3,
+    calorie: 136,
+    porzione: 100,
+  },
+  'Riso integrale (cotto)': {
+    categoria: 'pranzo',
+    proteine: 2.7,
+    carboidrati: 23.5,
+    grassi: 0.9,
+    fibre: 1.8,
+    ferro: 0.5,
+    calcio: 10,
+    vitB12: 0,
+    vitB2: 0.03,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.6,
+    calorie: 111,
+    porzione: 100,
+  },
+  'Quinoa (cotta)': {
+    categoria: 'pranzo',
+    proteine: 4.4,
+    carboidrati: 21.3,
+    grassi: 1.9,
+    fibre: 2.8,
+    ferro: 1.5,
+    calcio: 17,
+    vitB12: 0,
+    vitB2: 0.11,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2,
+    zinco: 1.1,
+    calorie: 120,
+    porzione: 100,
+  },
+  'Farro (cotto)': {
+    categoria: 'pranzo',
+    proteine: 5.5,
+    carboidrati: 26.4,
+    grassi: 1.1,
+    fibre: 3.5,
+    ferro: 1.5,
+    calcio: 14,
+    vitB12: 0,
+    vitB2: 0.09,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2,
+    zinco: 1.2,
+    calorie: 130,
+    porzione: 100,
+  },
+  'Cous cous (cotto)': {
+    categoria: 'pranzo',
+    proteine: 3.8,
+    carboidrati: 23.2,
+    grassi: 0.2,
+    fibre: 1.4,
+    ferro: 0.4,
+    calcio: 9,
+    vitB12: 0,
+    vitB2: 0.04,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1.5,
+    zinco: 0.3,
+    calorie: 112,
+    porzione: 100,
+  },
+  'Miglio (pelato)': {
+    categoria: 'pranzo',
+    proteine: 11,
+    carboidrati: 73,
+    grassi: 4.2,
+    fibre: 3.8,
+    ferro: 6.9,
+    calcio: 9.5,
+    vitB12: 0,
+    vitB2: 0.11,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2.5,
+    zinco: 2.9,
+    calorie: 378,
+    porzione: 60,
+  },
+  'Farina di farro integrale': {
+    categoria: 'pranzo',
+    proteine: 15,
+    carboidrati: 70,
+    grassi: 2.5,
+    fibre: 10,
+    ferro: 3.6,
+    calcio: 35,
+    vitB12: 0,
+    vitB2: 0.09,
+    vitD: 0,
+    omega3: 0,
+    iodio: 3,
+    zinco: 4.5,
+    calorie: 350,
+    porzione: 60,
+  },
+  'Farina di segale integrale': {
+    categoria: 'pranzo',
+    proteine: 13,
+    carboidrati: 76,
+    grassi: 1.7,
+    fibre: 13,
+    ferro: 4,
+    calcio: 23,
+    vitB12: 0,
+    vitB2: 0.14,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 4.6,
+    zinco: 3.7,
+    calorie: 340,
+    porzione: 60,
+  },
+  'Farina di grano tenero integrale': {
+    categoria: 'pranzo',
+    proteine: 13,
+    carboidrati: 72,
+    grassi: 2.1,
+    fibre: 10,
+    ferro: 4,
+    calcio: 37,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2.5,
+    zinco: 2.7,
+    calorie: 349,
+    porzione: 60,
+  },
+  'Germe di grano': {
+    categoria: 'pranzo',
+    proteine: 27,
+    carboidrati: 51,
+    grassi: 9.2,
+    fibre: 13,
+    ferro: 7.6,
+    calcio: 55,
+    vitB12: 0,
+    vitB2: 0.6,
+    vitD: 0,
+    omega3: 0.7,
+    iodio: 0.2,
+    zinco: 17,
+    calorie: 360,
+    porzione: 20,
+  },
+  'Crusca di grano': {
+    categoria: 'pranzo',
+    proteine: 15,
+    carboidrati: 65,
+    grassi: 4.2,
+    fibre: 42,
+    ferro: 16,
+    calcio: 67,
+    vitB12: 0,
+    vitB2: 0.51,
+    vitD: 0,
+    omega3: 0.3,
+    iodio: 3.1,
+    zinco: 9.4,
+    calorie: 280,
+    porzione: 20,
+  },
+
+  // PRANZO/CENA - VERDURE (crude)
+  'Spinaci crudi': {
+    categoria: 'pranzo',
+    proteine: 2.9,
+    carboidrati: 3.6,
+    grassi: 0.4,
+    fibre: 2.2,
+    ferro: 2.7,
+    calcio: 100,
+    vitB12: 0,
+    vitB2: 0.22,
+    vitD: 0,
+    omega3: 0.14,
+    iodio: 12,
+    zinco: 0.6,
+    calorie: 23,
+    porzione: 100,
+  },
+  'Broccoli crudi': {
+    categoria: 'pranzo',
+    proteine: 2.8,
+    carboidrati: 7,
+    grassi: 0.4,
+    fibre: 2.6,
+    ferro: 1.4,
+    calcio: 93,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.02,
+    iodio: 15,
+    zinco: 0.5,
+    calorie: 34,
+    porzione: 100,
+  },
+  Pomodori: {
+    categoria: 'pranzo',
+    proteine: 0.9,
+    carboidrati: 3.9,
+    grassi: 0.2,
+    fibre: 1.2,
+    ferro: 0.3,
+    calcio: 10,
+    vitB12: 0,
+    vitB2: 0.02,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.2,
+    calorie: 18,
+    porzione: 100,
+  },
+  Carote: {
+    categoria: 'pranzo',
+    proteine: 0.9,
+    carboidrati: 10,
+    grassi: 0.2,
+    fibre: 2.8,
+    ferro: 0.3,
+    calcio: 33,
+    vitB12: 0,
+    vitB2: 0.06,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1.5,
+    zinco: 0.2,
+    calorie: 41,
+    porzione: 100,
+  },
+  Zucchine: {
+    categoria: 'pranzo',
+    proteine: 1.2,
+    carboidrati: 3.1,
+    grassi: 0.3,
+    fibre: 1,
+    ferro: 0.4,
+    calcio: 16,
+    vitB12: 0,
+    vitB2: 0.05,
+    vitD: 0,
+    omega3: 0.05,
+    iodio: 2,
+    zinco: 0.3,
+    calorie: 17,
+    porzione: 100,
+  },
+  Melanzane: {
+    categoria: 'pranzo',
+    proteine: 1,
+    carboidrati: 6,
+    grassi: 0.2,
+    fibre: 3,
+    ferro: 0.2,
+    calcio: 9,
+    vitB12: 0,
+    vitB2: 0.04,
+    vitD: 0,
+    omega3: 0,
+    iodio: 1,
+    zinco: 0.2,
+    calorie: 25,
+    porzione: 100,
+  },
+  Peperoni: {
+    categoria: 'pranzo',
+    proteine: 0.9,
+    carboidrati: 6,
+    grassi: 0.3,
+    fibre: 2.1,
+    ferro: 0.4,
+    calcio: 7,
+    vitB12: 0,
+    vitB2: 0.03,
+    vitD: 0,
+    omega3: 0.06,
+    iodio: 1.5,
+    zinco: 0.3,
+    calorie: 27,
+    porzione: 100,
+  },
+  'Insalata mista': {
+    categoria: 'pranzo',
+    proteine: 1.4,
+    carboidrati: 3.3,
+    grassi: 0.2,
+    fibre: 1.5,
+    ferro: 0.9,
+    calcio: 36,
+    vitB12: 0,
+    vitB2: 0.08,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 3,
+    zinco: 0.2,
+    calorie: 17,
+    porzione: 80,
+  },
+  'Avocado crudo': {
+    categoria: 'pranzo',
+    proteine: 2,
+    carboidrati: 9,
+    grassi: 15,
+    fibre: 7,
+    ferro: 1,
+    calcio: 16,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 1,
+    zinco: 0.6,
+    calorie: 160,
+    porzione: 100,
+  },
+  'Bietola cruda': {
+    categoria: 'pranzo',
+    proteine: 1.8,
+    carboidrati: 3.7,
+    grassi: 0.2,
+    fibre: 1.6,
+    ferro: 2.3,
+    calcio: 80,
+    vitB12: 0,
+    vitB2: 0.13,
+    vitD: 0,
+    omega3: 0.05,
+    iodio: 1,
+    zinco: 0.3,
+    calorie: 19,
+    porzione: 100,
+  },
+  'Rucola cruda': {
+    categoria: 'pranzo',
+    proteine: 2.6,
+    carboidrati: 3.7,
+    grassi: 0.7,
+    fibre: 1.6,
+    ferro: 1.5,
+    calcio: 160,
+    vitB12: 0,
+    vitB2: 0.09,
+    vitD: 0,
+    omega3: 0.17,
+    iodio: 0,
+    zinco: 0.4,
+    calorie: 25,
+    porzione: 50,
+  },
+  'Verza cruda': {
+    categoria: 'pranzo',
+    proteine: 2.5,
+    carboidrati: 6,
+    grassi: 0.3,
+    fibre: 3.1,
+    ferro: 0.6,
+    calcio: 64,
+    vitB12: 0,
+    vitB2: 0.06,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2.6,
+    zinco: 0.2,
+    calorie: 25,
+    porzione: 100,
+  },
+  'Prezzemolo crudo': {
+    categoria: 'pranzo',
+    proteine: 3,
+    carboidrati: 6.3,
+    grassi: 0.8,
+    fibre: 3.3,
+    ferro: 5.9,
+    calcio: 210,
+    vitB12: 0,
+    vitB2: 0.3,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 3.4,
+    zinco: 0.8,
+    calorie: 36,
+    porzione: 10,
+  },
+  'Basilico crudo': {
+    categoria: 'pranzo',
+    proteine: 3.2,
+    carboidrati: 5.1,
+    grassi: 0.6,
+    fibre: 3.9,
+    ferro: 5.5,
+    calcio: 250,
+    vitB12: 0,
+    vitB2: 0.31,
+    vitD: 0,
+    omega3: 0.31,
+    iodio: 0.9,
+    zinco: 0.7,
+    calorie: 27,
+    porzione: 10,
+  },
+  'Menta cruda': {
+    categoria: 'pranzo',
+    proteine: 3.8,
+    carboidrati: 8,
+    grassi: 0.7,
+    fibre: 8,
+    ferro: 9.5,
+    calcio: 210,
+    vitB12: 0,
+    vitB2: 0.33,
+    vitD: 0,
+    omega3: 0.5,
+    iodio: 4,
+    zinco: 1.2,
+    calorie: 44,
+    porzione: 5,
+  },
+
+  // FUNGHI
+  'Funghi champignon crudi': {
+    categoria: 'pranzo',
+    proteine: 3.1,
+    carboidrati: 3.3,
+    grassi: 0.3,
+    fibre: 1,
+    ferro: 5.2,
+    calcio: 40,
+    vitB12: 0,
+    vitB2: 0.06,
+    vitD: 2.6,
+    omega3: 0.01,
+    iodio: 10,
+    zinco: 4,
+    calorie: 22,
+    porzione: 100,
+  },
+  'Funghi porcini crudi': {
+    categoria: 'pranzo',
+    proteine: 3.1,
+    carboidrati: 3.3,
+    grassi: 0.3,
+    fibre: 2.3,
+    ferro: 1,
+    calcio: 4.2,
+    vitB12: 0,
+    vitB2: 0.37,
+    vitD: 3.1,
+    omega3: 0.01,
+    iodio: 3.6,
+    zinco: 1.5,
+    calorie: 26,
+    porzione: 100,
+  },
+  'Finferli crudi': {
+    categoria: 'pranzo',
+    proteine: 2.2,
+    carboidrati: 6.5,
+    grassi: 0.5,
+    fibre: 3.8,
+    ferro: 6.5,
+    calcio: 8,
+    vitB12: 0,
+    vitB2: 0.23,
+    vitD: 2.1,
+    omega3: 0.01,
+    iodio: 3,
+    zinco: 0.6,
+    calorie: 38,
+    porzione: 100,
+  },
+
+  // CONDIMENTI
+  'Olio EVO': {
+    categoria: 'condimento',
+    proteine: 0,
+    carboidrati: 0,
+    grassi: 100,
+    fibre: 0,
+    ferro: 0.6,
+    calcio: 1,
+    vitB12: 0,
+    vitB2: 0,
+    vitD: 0,
+    omega3: 0.8,
+    iodio: 0.5,
+    zinco: 0,
+    calorie: 884,
+    porzione: 10,
+  },
+  'Semi di sesamo': {
+    categoria: 'condimento',
+    proteine: 18,
+    carboidrati: 23,
+    grassi: 50,
+    fibre: 12,
+    ferro: 8.6,
+    calcio: 940,
+    vitB12: 0,
+    vitB2: 0.15,
+    vitD: 0,
+    omega3: 0.4,
+    iodio: 10,
+    zinco: 8.5,
+    calorie: 573,
+    porzione: 10,
+  },
+  'Lievito alimentare': {
+    categoria: 'condimento',
+    proteine: 50,
+    carboidrati: 36,
+    grassi: 7,
+    fibre: 27,
+    ferro: 18,
+    calcio: 50,
+    vitB12: 20,
+    vitB2: 3.8,
+    vitD: 0,
+    omega3: 0,
+    iodio: 4,
+    zinco: 8,
+    calorie: 325,
+    porzione: 5,
+  },
+  'Sale iodato': {
+    categoria: 'condimento',
+    proteine: 0,
+    carboidrati: 0,
+    grassi: 0,
+    fibre: 0,
+    ferro: 0.3,
+    calcio: 10,
+    vitB12: 0,
+    vitB2: 0,
+    vitD: 0,
+    omega3: 0,
+    iodio: 2500,
+    zinco: 0,
+    calorie: 0,
+    porzione: 5,
+  },
+  Melassa: {
+    categoria: 'condimento',
+    proteine: 1.4,
+    carboidrati: 74,
+    grassi: 0.1,
+    fibre: 0,
+    ferro: 9.2,
+    calcio: 500,
+    vitB12: 0,
+    vitB2: 0.1,
+    vitD: 0,
+    omega3: 0,
+    iodio: 0,
+    zinco: 0.9,
+    calorie: 290,
+    porzione: 15,
+  },
+  'Germogli di soia': {
+    categoria: 'pranzo',
+    proteine: 3.4,
+    carboidrati: 5.9,
+    grassi: 1.4,
+    fibre: 1.3,
+    ferro: 0.9,
+    calcio: 32,
+    vitB12: 0,
+    vitB2: 0.16,
+    vitD: 0,
+    omega3: 0.1,
+    iodio: 2,
+    zinco: 1,
+    calorie: 47,
+    porzione: 100,
+  },
+  'Farina di soia': {
+    categoria: 'pranzo',
+    proteine: 36,
+    carboidrati: 35,
+    grassi: 18,
+    fibre: 9,
+    ferro: 12,
+    calcio: 200,
+    vitB12: 0,
+    vitB2: 0.28,
+    vitD: 0,
+    omega3: 1.5,
+    iodio: 0.5,
+    zinco: 4.9,
+    calorie: 447,
+    porzione: 50,
+  },
+};
+// Database integratori
+const INTEGRATORI_DATABASE = {
+  'B12 (cianocobalamina)': {
+    dosaggio: '1000 μg',
+    unita: 'compressa',
+    importanza: 'ESSENZIALE',
+  },
+  'B12 (metilcobalamina)': {
+    dosaggio: '1000 μg',
+    unita: 'compressa',
+    importanza: 'ESSENZIALE',
+  },
+  'Vitamina D3': {
+    dosaggio: '2000 UI',
+    unita: 'gocce/compressa',
+    importanza: 'MOLTO IMPORTANTE',
+  },
+  'Omega-3 DHA+EPA': {
+    dosaggio: '250-500 mg',
+    unita: 'capsula',
+    importanza: 'IMPORTANTE',
+  },
+  Zinco: { dosaggio: '10-15 mg', unita: 'compressa', importanza: 'UTILE' },
+  Ferro: {
+    dosaggio: '14-30 mg',
+    unita: 'compressa',
+    importanza: 'SE NECESSARIO',
+  },
+  Iodio: { dosaggio: '150 μg', unita: 'compressa', importanza: 'IMPORTANTE' },
+  'Vitamina B2': {
+    dosaggio: '1.4 mg',
+    unita: 'compressa',
+    importanza: 'UTILE',
+  },
+  Calcio: {
+    dosaggio: '500 mg',
+    unita: 'compressa',
+    importanza: 'SE NECESSARIO',
+  },
+  'Multivitaminico vegano': {
+    dosaggio: '1 dose',
+    unita: 'compressa',
+    importanza: 'OPZIONALE',
+  },
+};
+
+const OBIETTIVI_DEFAULT = {
+  proteine: 60,
+  carboidrati: 250,
+  grassi: 70,
+  fibre: 30,
+  ferro: 15,
+  calcio: 1000,
+  vitB12: 3,
+  vitB2: 1.4,
+  vitD: 20,
+  omega3: 1.6,
+  iodio: 200,
+  zinco: 10,
+  calorie: 2000,
+};
+
+const TrackerNutrizionaleVegano = () => {
+  const [pasti, setPasti] = useState({
+    colazione: [],
+    spuntinoMattina: [],
+    pranzo: [],
+    spuntinoPomeriggio: [],
+    cena: [],
+  });
+
+  const [integratoriPasti, setIntegratoriPasti] = useState({
+    colazione: [],
+    spuntinoMattina: [],
+    pranzo: [],
+    spuntinoPomeriggio: [],
+    cena: [],
+  });
+
+  const [modalePasto, setModalePasto] = useState(null);
+  const [modaleIntegratore, setModaleIntegratore] = useState(null);
+  const [alimentoSelezionato, setAlimentoSelezionato] = useState('');
+  const [integratoreSelezionato, setIntegratoreSelezionato] = useState('');
+  const [quantita, setQuantita] = useState(1);
+
+  const [obiettivi, setObiettivi] = useState(OBIETTIVI_DEFAULT);
+  const [calorieTarget, setCalorieTarget] = useState(2000);
+  const [showCalorieSetup, setShowCalorieSetup] = useState(false);
+  const [showSuggerimenti, setShowSuggerimenti] = useState(false);
+  const [showIntegratoriInfo, setShowIntegratoriInfo] = useState(false);
+  const [showCarenzeCollapse, setShowCarenzeCollapse] = useState(true);
+
+  // Calcola totali giornalieri
+  const totaliGiornalieri = useMemo(() => {
+    let totali = {
+      proteine: 0,
+      carboidrati: 0,
+      grassi: 0,
+      fibre: 0,
+      ferro: 0,
+      calcio: 0,
+      vitB12: 0,
+      vitB2: 0,
+      vitD: 0,
+      omega3: 0,
+      iodio: 0,
+      zinco: 0,
+      calorie: 0,
+    };
+
+    Object.values(pasti)
+      .flat()
+      .forEach((item) => {
+        const alimento = ALIMENTI_DATABASE[item.nome];
+        const moltiplicatore = item.quantita / 100;
+
+        Object.keys(totali).forEach((nutriente) => {
+          totali[nutriente] += alimento[nutriente] * moltiplicatore;
+        });
+      });
+
+    return totali;
+  }, [pasti]);
+
+  const deltaCalorie = useMemo(() => {
+    return totaliGiornalieri.calorie - calorieTarget;
+  }, [totaliGiornalieri.calorie, calorieTarget]);
+
+  const deltaPercentuale = useMemo(() => {
+    return (deltaCalorie / calorieTarget) * 100;
+  }, [deltaCalorie, calorieTarget]);
+
+  const generaSuggerimenti = useMemo(() => {
+    const suggerimenti = [];
+    const alimentiGiaUsati = Object.values(pasti)
+      .flat()
+      .map((p) => p.nome);
+
+    Object.keys(obiettivi).forEach((nutriente) => {
+      if (nutriente === 'calorie') return;
+
+      const valore = totaliGiornalieri[nutriente];
+      const obiettivo = obiettivi[nutriente];
+      const percentuale = (valore / obiettivo) * 100;
+
+      if (percentuale < 80) {
+        const topAlimenti = Object.entries(ALIMENTI_DATABASE)
+          .filter(([nome]) => !alimentiGiaUsati.includes(nome))
+          .map(([nome, dati]) => ({
+            nome,
+            valore: dati[nutriente],
+            caloriePer100g: dati.calorie,
+            porzione: dati.porzione,
+          }))
+          .sort((a, b) => b.valore - a.valore)
+          .slice(0, 3);
+
+        if (topAlimenti.length > 0 && topAlimenti[0].valore > 0) {
+          suggerimenti.push({
+            nutriente: nutriente,
+            carenza: obiettivo - valore,
+            percentuale: percentuale,
+            alimenti: topAlimenti,
+          });
+        }
+      }
+    });
+
+    return suggerimenti.sort((a, b) => a.percentuale - b.percentuale);
+  }, [totaliGiornalieri, obiettivi, pasti]);
+
+  const suggerimentiCalorie = useMemo(() => {
+    if (deltaPercentuale >= -10 && deltaPercentuale <= 10) {
+      return null;
+    }
+
+    if (deltaCalorie < 0) {
+      const calorieMananti = Math.abs(deltaCalorie);
+      return {
+        tipo: 'deficit',
+        calorieMancanti: calorieMananti,
+        suggerimenti: generaSuggerimenti.slice(0, 2).map((s) => {
+          const alimentoTop = s.alimenti[0];
+          const grammiNecessari = Math.ceil(
+            (calorieMananti / alimentoTop.caloriePer100g) * 100
+          );
+          return {
+            ...s,
+            alimentoConsigliato: alimentoTop.nome,
+            quantitaConsigliata: Math.min(
+              grammiNecessari,
+              alimentoTop.porzione * 2
+            ),
+          };
+        }),
+      };
+    } else {
+      const calorieEccesso = deltaCalorie;
+      const alimentiPerCalorie = Object.values(pasti)
+        .flat()
+        .map((item) => {
+          const alimento = ALIMENTI_DATABASE[item.nome];
+          return {
+            ...item,
+            calorieTotali: (alimento.calorie * item.quantita) / 100,
+            caloriePer100g: alimento.calorie,
+          };
+        })
+        .sort((a, b) => b.calorieTotali - a.calorieTotali);
+
+      return {
+        tipo: 'surplus',
+        calorieEccesso: calorieEccesso,
+        alimentiDaRidurre: alimentiPerCalorie.slice(0, 3),
+      };
+    }
+  }, [deltaCalorie, deltaPercentuale, generaSuggerimenti, pasti]);
+
+  const getPercentuale = (valore, obiettivo) =>
+    Math.min((valore / obiettivo) * 100, 100);
+
+  const aggiungiAlimento = () => {
+    if (!alimentoSelezionato || !modalePasto) return;
+
+    const nuovoItem = {
+      nome: alimentoSelezionato,
+      quantita: quantita,
+    };
+
+    setPasti((prev) => ({
+      ...prev,
+      [modalePasto]: [...prev[modalePasto], nuovoItem],
+    }));
+
+    setAlimentoSelezionato('');
+    setQuantita(1);
+  };
+
+  const aggiungiIntegratore = () => {
+    if (!integratoreSelezionato || !modaleIntegratore) return;
+
+    const nuovoIntegratore = {
+      nome: integratoreSelezionato,
+      dosaggio: INTEGRATORI_DATABASE[integratoreSelezionato].dosaggio,
+    };
+
+    setIntegratoriPasti((prev) => ({
+      ...prev,
+      [modaleIntegratore]: [...prev[modaleIntegratore], nuovoIntegratore],
+    }));
+
+    setIntegratoreSelezionato('');
+  };
+
+  const rimuoviAlimento = (pasto, index) => {
+    setPasti((prev) => ({
+      ...prev,
+      [pasto]: prev[pasto].filter((_, i) => i !== index),
+    }));
+  };
+
+  const rimuoviIntegratore = (pasto, index) => {
+    setIntegratoriPasti((prev) => ({
+      ...prev,
+      [pasto]: prev[pasto].filter((_, i) => i !== index),
+    }));
+  };
+
+  const alimentiFiltrati = Object.entries(ALIMENTI_DATABASE).filter(
+    ([nome, alimento]) => {
+      if (!modalePasto) return false;
+      if (modalePasto === 'colazione')
+        return alimento.categoria === 'colazione';
+      if (
+        modalePasto === 'spuntinoMattina' ||
+        modalePasto === 'spuntinoPomeriggio'
+      )
+        return (
+          alimento.categoria === 'spuntino' ||
+          alimento.categoria === 'colazione'
+        );
+      return true;
+    }
+  );
+
+  const PastoCard = ({ titolo, tipoPasto, icona: Icona }) => {
+    const alimentiPasto = pasti[tipoPasto];
+    const integratoriPasto = integratoriPasti[tipoPasto];
+
+    const totaliPasto = useMemo(() => {
+      let tot = { proteine: 0, carboidrati: 0, grassi: 0, calorie: 0 };
+      alimentiPasto.forEach((item) => {
+        const alimento = ALIMENTI_DATABASE[item.nome];
+        const molt = item.quantita / 100;
+        tot.proteine += alimento.proteine * molt;
+        tot.carboidrati += alimento.carboidrati * molt;
+        tot.grassi += alimento.grassi * molt;
+        tot.calorie += alimento.calorie * molt;
+      });
+      return tot;
+    }, [alimentiPasto]);
+
+    return (
+      <div className='bg-white rounded-xl shadow-md p-4 border-2 border-gray-200'>
+        <div className='flex items-center justify-between mb-3'>
+          <div className='flex items-center gap-2'>
+            <Icona className='w-5 h-5 text-green-600' />
+            <h3 className='text-lg font-bold text-gray-800'>{titolo}</h3>
+          </div>
+          <div className='flex gap-2'>
+            <button
+              onClick={() => setModalePasto(tipoPasto)}
+              className='p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition'
+              title='Aggiungi alimento'
+            >
+              <Plus className='w-4 h-4' />
+            </button>
+            <button
+              onClick={() => setModaleIntegratore(tipoPasto)}
+              className='p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition'
+              title='Aggiungi integratore'
+            >
+              <Pill className='w-4 h-4' />
+            </button>
+          </div>
+        </div>
+
+        {/* Sezione Alimenti */}
+        {alimentiPasto.length === 0 && integratoriPasto.length === 0 ? (
+          <p className='text-sm text-gray-400 italic'>
+            Nessun alimento o integratore aggiunto
+          </p>
+        ) : (
+          <>
+            {/* Alimenti */}
+            {alimentiPasto.length > 0 && (
+              <div className='space-y-2 mb-3'>
+                <p className='text-xs font-semibold text-gray-500 uppercase'>
+                  Alimenti
+                </p>
+                {alimentiPasto.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className='flex items-center justify-between bg-gray-50 p-2 rounded'
+                  >
+                    <div className='flex-1'>
+                      <span className='text-sm font-medium'>{item.nome}</span>
+                      <span className='text-xs text-gray-500 ml-2'>
+                        ({item.quantita}g)
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => rimuoviAlimento(tipoPasto, idx)}
+                      className='p-1 text-red-500 hover:bg-red-50 rounded'
+                    >
+                      <Trash2 className='w-4 h-4' />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Integratori */}
+            {integratoriPasto.length > 0 && (
+              <div className='space-y-2 mb-3'>
+                <p className='text-xs font-semibold text-purple-600 uppercase'>
+                  💊 Integratori
+                </p>
+                {integratoriPasto.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className='flex items-center justify-between bg-purple-50 p-2 rounded border border-purple-200'
+                  >
+                    <div className='flex-1'>
+                      <span className='text-sm font-medium text-purple-900'>
+                        {item.nome}
+                      </span>
+                      <span className='text-xs text-purple-600 ml-2'>
+                        ({item.dosaggio})
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => rimuoviIntegratore(tipoPasto, idx)}
+                      className='p-1 text-red-500 hover:bg-red-50 rounded'
+                    >
+                      <Trash2 className='w-4 h-4' />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Totali Pasto */}
+            {alimentiPasto.length > 0 && (
+              <div className='grid grid-cols-2 gap-2 text-xs'>
+                <div className='bg-blue-50 p-2 rounded'>
+                  <span className='font-semibold'>Proteine:</span>{' '}
+                  {totaliPasto.proteine.toFixed(1)}g
+                </div>
+                <div className='bg-purple-50 p-2 rounded'>
+                  <span className='font-semibold'>Carbo:</span>{' '}
+                  {totaliPasto.carboidrati.toFixed(1)}g
+                </div>
+                <div className='bg-yellow-50 p-2 rounded'>
+                  <span className='font-semibold'>Grassi:</span>{' '}
+                  {totaliPasto.grassi.toFixed(1)}g
+                </div>
+                <div className='bg-red-50 p-2 rounded'>
+                  <span className='font-semibold'>Kcal:</span>{' '}
+                  {totaliPasto.calorie.toFixed(0)}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
+
+  const ProgressBar = ({ label, valore, obiettivo, unita, colore }) => {
+    const percentuale = getPercentuale(valore, obiettivo);
+    const isCarente = percentuale < 80;
+
+    return (
+      <div className='mb-3'>
+        <div className='flex justify-between items-center mb-1'>
+          <span className='text-sm font-semibold text-gray-700'>{label}</span>
+          <span
+            className={`text-sm font-bold ${
+              isCarente ? 'text-orange-600' : 'text-green-600'
+            }`}
+          >
+            {valore.toFixed(1)}/{obiettivo} {unita}
+          </span>
+        </div>
+        <div className='w-full bg-gray-200 rounded-full h-3 overflow-hidden'>
+          <div
+            className={`h-3 transition-all duration-500 ${colore}`}
+            style={{ width: `${percentuale}%` }}
+          />
+        </div>
+        {isCarente && (
+          <div className='flex items-center gap-1 mt-1'>
+            <AlertCircle className='w-3 h-3 text-orange-500' />
+            <span className='text-xs text-orange-600'>
+              Sotto l'80% dell'obiettivo
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const getNomeNutriente = (key) => {
+    const nomi = {
+      proteine: 'Proteine',
+      carboidrati: 'Carboidrati',
+      grassi: 'Grassi',
+      fibre: 'Fibre',
+      ferro: 'Ferro',
+      calcio: 'Calcio',
+      vitB12: 'Vitamina B12',
+      vitB2: 'Vitamina B2',
+      vitD: 'Vitamina D',
+      omega3: 'Omega-3',
+      iodio: 'Iodio',
+      zinco: 'Zinco',
+    };
+    return nomi[key] || key;
+  };
+
+  // Calcola totale integratori per riepilogo
+  const riepilogoIntegratori = useMemo(() => {
+    const tuttiIntegratori = Object.values(integratoriPasti).flat();
+    const conteggioIntegratori = {};
+
+    tuttiIntegratori.forEach((int) => {
+      if (conteggioIntegratori[int.nome]) {
+        conteggioIntegratori[int.nome]++;
+      } else {
+        conteggioIntegratori[int.nome] = 1;
+      }
+    });
+
+    return conteggioIntegratori;
+  }, [integratoriPasti]);
+
+  return (
+    <div className='min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-emerald-50 p-4'>
+      <div className='max-w-7xl mx-auto'>
+        {/* Header */}
+        <div className='text-center mb-6'>
+          <div className='flex items-center justify-center gap-3 mb-3'>
+            <Calendar className='w-10 h-10 text-green-600' />
+            <h1 className='text-3xl md:text-4xl font-bold text-gray-800'>
+              Tracker Nutrizionale Vegano PRO
+            </h1>
+          </div>
+          <p className='text-gray-600 text-sm md:text-base'>
+            Con tracking integratori • Suggerimenti AI • Gestione completa
+          </p>
+          <div className='flex gap-2 justify-center mt-3 flex-wrap'>
+            <button
+              onClick={() => setShowCalorieSetup(!showCalorieSetup)}
+              className='px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2'
+            >
+              <Target className='w-4 h-4' />
+              Imposta Calorie
+            </button>
+            <button
+              onClick={() => setShowIntegratoriInfo(!showIntegratoriInfo)}
+              className='px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2'
+            >
+              <Pill className='w-4 h-4' />
+              Info Integratori
+            </button>
+          </div>
+        </div>
+
+        {/* Setup Calorie Modal */}
+        {showCalorieSetup && (
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+            <div className='bg-white rounded-xl p-6 max-w-md w-full'>
+              <h2 className='text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2'>
+                <Target className='w-6 h-6 text-blue-600' />
+                Imposta Obiettivo Calorico
+              </h2>
+
+              <div className='space-y-4'>
+                <div>
+                  <label className='block text-sm font-semibold mb-2'>
+                    Calorie Target Giornaliere
+                  </label>
+                  <input
+                    type='number'
+                    value={calorieTarget}
+                    onChange={(e) => setCalorieTarget(Number(e.target.value))}
+                    min='1200'
+                    max='4000'
+                    step='50'
+                    className='w-full p-3 border-2 border-gray-300 rounded-lg text-lg font-bold'
+                  />
+                  <p className='text-xs text-gray-500 mt-1'>
+                    Range consigliato: 1500-2500 kcal/giorno
+                  </p>
+                </div>
+
+                <div className='bg-blue-50 p-3 rounded-lg text-sm'>
+                  <p className='font-semibold mb-2'>💡 Suggerimenti:</p>
+                  <ul className='space-y-1 text-xs'>
+                    <li>• Sedentario: 1600-1800 kcal</li>
+                    <li>• Attività leggera: 1800-2200 kcal</li>
+                    <li>• Attività moderata: 2200-2500 kcal</li>
+                    <li>• Molto attivo: 2500-3000 kcal</li>
+                  </ul>
+                </div>
+
+                <button
+                  onClick={() => setShowCalorieSetup(false)}
+                  className='w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold'
+                >
+                  Salva e Chiudi
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal Info Integratori */}
+        {showIntegratoriInfo && (
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto'>
+            <div className='bg-white rounded-xl p-6 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto'>
+              <h2 className='text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2'>
+                <Pill className='w-6 h-6 text-purple-600' />
+                Guida Integratori Vegani
+              </h2>
+
+              <div className='space-y-3 mb-4'>
+                {Object.entries(INTEGRATORI_DATABASE).map(([nome, info]) => (
+                  <div
+                    key={nome}
+                    className={`p-4 rounded-lg border-2 ${
+                      info.importanza === 'ESSENZIALE'
+                        ? 'bg-red-50 border-red-200'
+                        : info.importanza === 'MOLTO IMPORTANTE'
+                        ? 'bg-orange-50 border-orange-200'
+                        : info.importanza === 'IMPORTANTE'
+                        ? 'bg-yellow-50 border-yellow-200'
+                        : 'bg-green-50 border-green-200'
+                    }`}
+                  >
+                    <div className='flex items-start justify-between mb-2'>
+                      <h3 className='font-bold text-lg'>{nome}</h3>
+                      <span
+                        className={`text-xs px-2 py-1 rounded font-bold ${
+                          info.importanza === 'ESSENZIALE'
+                            ? 'bg-red-200 text-red-800'
+                            : info.importanza === 'MOLTO IMPORTANTE'
+                            ? 'bg-orange-200 text-orange-800'
+                            : info.importanza === 'IMPORTANTE'
+                            ? 'bg-yellow-200 text-yellow-800'
+                            : 'bg-green-200 text-green-800'
+                        }`}
+                      >
+                        {info.importanza}
+                      </span>
+                    </div>
+                    <p className='text-sm mb-2'>
+                      <strong>Dosaggio:</strong> {info.dosaggio} per{' '}
+                      {info.unita}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className='bg-gray-100 p-4 rounded-lg mb-4'>
+                <h3 className='font-bold mb-2'>💡 Quando assumere:</h3>
+                <ul className='text-sm space-y-1'>
+                  <li>
+                    • <strong>B12:</strong> Mattina a digiuno (migliore
+                    assorbimento)
+                  </li>
+                  <li>
+                    • <strong>Vitamina D:</strong> Con pasto contenente grassi
+                  </li>
+                  <li>
+                    • <strong>Omega-3:</strong> Durante i pasti principali
+                  </li>
+                  <li>
+                    • <strong>Ferro:</strong> Lontano da caffè/tè, con vitamina
+                    C
+                  </li>
+                  <li>
+                    • <strong>Calcio:</strong> Diviso in 2-3 dosi giornaliere
+                  </li>
+                </ul>
+              </div>
+
+              <button
+                onClick={() => setShowIntegratoriInfo(false)}
+                className='w-full p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold'
+              >
+                Chiudi
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Pannello Calorie con Delta */}
+        <div className='mb-6'>
+          <div
+            className={`p-6 rounded-xl shadow-lg ${
+              deltaPercentuale < -10
+                ? 'bg-gradient-to-r from-red-400 to-red-500'
+                : deltaPercentuale > 10
+                ? 'bg-gradient-to-r from-orange-400 to-orange-500'
+                : 'bg-gradient-to-r from-green-400 to-green-500'
+            } text-white`}
+          >
+            <div className='flex items-center justify-between mb-3'>
+              <h2 className='text-2xl font-bold flex items-center gap-2'>
+                <Target className='w-6 h-6' />
+                Bilancio Calorico
+              </h2>
+              {deltaPercentuale >= -10 && deltaPercentuale <= 10 && (
+                <CheckCircle className='w-8 h-8' />
+              )}
+              {(deltaPercentuale < -10 || deltaPercentuale > 10) && (
+                <AlertTriangle className='w-8 h-8' />
+              )}
+            </div>
+
+            <div className='grid grid-cols-3 gap-4 text-center'>
+              <div>
+                <p className='text-sm opacity-90'>Target</p>
+                <p className='text-2xl font-bold'>{calorieTarget}</p>
+                <p className='text-xs'>kcal/giorno</p>
+              </div>
+              <div>
+                <p className='text-sm opacity-90'>Consumate</p>
+                <p className='text-2xl font-bold'>
+                  {totaliGiornalieri.calorie.toFixed(0)}
+                </p>
+                <p className='text-xs'>kcal</p>
+              </div>
+              <div>
+                <p className='text-sm opacity-90'>Delta</p>
+                <p className='text-2xl font-bold'>
+                  {deltaCalorie > 0 ? '+' : ''}
+                  {deltaCalorie.toFixed(0)}
+                </p>
+                <p className='text-xs'>
+                  ({deltaPercentuale > 0 ? '+' : ''}
+                  {deltaPercentuale.toFixed(1)}%)
+                </p>
+              </div>
+            </div>
+
+            {suggerimentiCalorie && (
+              <button
+                onClick={() => setShowSuggerimenti(!showSuggerimenti)}
+                className='mt-4 w-full bg-white text-gray-800 py-2 px-4 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2'
+              >
+                <Lightbulb className='w-5 h-5' />
+                {suggerimentiCalorie.tipo === 'deficit'
+                  ? `Suggerimenti per aggiungere ${Math.abs(
+                      deltaCalorie
+                    ).toFixed(0)} kcal`
+                  : `Suggerimenti per ridurre ${deltaCalorie.toFixed(0)} kcal`}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Pannello Suggerimenti */}
+        {showSuggerimenti && suggerimentiCalorie && (
+          <div className='mb-6 bg-white rounded-xl shadow-lg p-6 border-2 border-yellow-200'>
+            <h3 className='text-xl font-bold mb-4 flex items-center gap-2'>
+              <Lightbulb className='w-6 h-6 text-yellow-600' />
+              Suggerimenti Personalizzati
+            </h3>
+
+            {suggerimentiCalorie.tipo === 'deficit' && (
+              <div className='space-y-4'>
+                <p className='text-gray-700'>
+                  Ti mancano circa{' '}
+                  <strong>
+                    {suggerimentiCalorie.calorieMancanti.toFixed(0)} kcal
+                  </strong>{' '}
+                  per raggiungere il tuo obiettivo. Ecco alcuni suggerimenti che
+                  ti aiutano anche a colmare le carenze nutrizionali:
+                </p>
+                {suggerimentiCalorie.suggerimenti.map((sugg, idx) => (
+                  <div
+                    key={idx}
+                    className='bg-green-50 p-4 rounded-lg border border-green-200'
+                  >
+                    <h4 className='font-bold text-green-900 mb-2'>
+                      Carenza di {getNomeNutriente(sugg.nutriente)} (
+                      {sugg.percentuale.toFixed(0)}% raggiunto)
+                    </h4>
+                    <p className='text-sm mb-2'>
+                      <strong>Alimento consigliato:</strong>{' '}
+                      {sugg.alimentoConsigliato}
+                    </p>
+                    <p className='text-sm'>
+                      <strong>Quantità suggerita:</strong>{' '}
+                      {sugg.quantitaConsigliata}g (circa{' '}
+                      {(
+                        (ALIMENTI_DATABASE[sugg.alimentoConsigliato].calorie *
+                          sugg.quantitaConsigliata) /
+                        100
+                      ).toFixed(0)}{' '}
+                      kcal)
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {suggerimentiCalorie.tipo === 'surplus' && (
+              <div className='space-y-4'>
+                <p className='text-gray-700'>
+                  Hai consumato{' '}
+                  <strong>
+                    {suggerimentiCalorie.calorieEccesso.toFixed(0)} kcal
+                  </strong>{' '}
+                  in più del tuo obiettivo. Considera di ridurre le porzioni di
+                  questi alimenti:
+                </p>
+                {suggerimentiCalorie.alimentiDaRidurre.map((alimento, idx) => (
+                  <div
+                    key={idx}
+                    className='bg-orange-50 p-4 rounded-lg border border-orange-200'
+                  >
+                    <div className='flex justify-between items-center'>
+                      <div>
+                        <h4 className='font-bold text-orange-900'>
+                          {alimento.nome}
+                        </h4>
+                        <p className='text-sm'>
+                          Quantità attuale: {alimento.quantita}g (
+                          {alimento.calorieTotali.toFixed(0)} kcal)
+                        </p>
+                      </div>
+                      <div className='text-right'>
+                        <p className='text-xs text-gray-600'>Riduci a:</p>
+                        <p className='font-bold text-orange-700'>
+                          {Math.max(
+                            alimento.quantita - 50,
+                            alimento.quantita * 0.7
+                          ).toFixed(0)}
+                          g
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowSuggerimenti(false)}
+              className='mt-4 w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition'
+            >
+              Nascondi Suggerimenti
+            </button>
+          </div>
+        )}
+
+        {/* Tabella Carenze COLLAPSIBILE */}
+        {generaSuggerimenti.length > 0 && (
+          <div className='mb-6 bg-white rounded-xl shadow-lg border-2 border-blue-200 overflow-hidden'>
+            <button
+              onClick={() => setShowCarenzeCollapse(!showCarenzeCollapse)}
+              className='w-full p-4 flex items-center justify-between hover:bg-blue-50 transition'
+            >
+              <h3 className='text-xl font-bold flex items-center gap-2 text-blue-900'>
+                <AlertCircle className='w-6 h-6' />
+                Nutrienti sotto l'80% ({generaSuggerimenti.length})
+              </h3>
+              {showCarenzeCollapse ? (
+                <ChevronUp className='w-6 h-6 text-blue-600' />
+              ) : (
+                <ChevronDown className='w-6 h-6 text-blue-600' />
+              )}
+            </button>
+
+            {showCarenzeCollapse && (
+              <div className='p-6 pt-0'>
+                <div className='overflow-x-auto'>
+                  <table className='w-full text-sm'>
+                    <thead className='bg-blue-100'>
+                      <tr>
+                        <th className='p-2 text-left'>Nutriente</th>
+                        <th className='p-2 text-center'>Raggiunto</th>
+                        <th className='p-2 text-center'>Mancante</th>
+                        <th className='p-2 text-left'>
+                          Top 3 Alimenti Consigliati
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {generaSuggerimenti.slice(0, 5).map((sugg, idx) => (
+                        <tr
+                          key={idx}
+                          className='border-b border-blue-100 hover:bg-blue-50'
+                        >
+                          <td className='p-2 font-semibold'>
+                            {getNomeNutriente(sugg.nutriente)}
+                          </td>
+                          <td className='p-2 text-center'>
+                            <span className='text-orange-600 font-bold'>
+                              {sugg.percentuale.toFixed(0)}%
+                            </span>
+                          </td>
+                          <td className='p-2 text-center font-semibold'>
+                            {sugg.carenza.toFixed(1)}
+                          </td>
+                          <td className='p-2'>
+                            <div className='space-y-1'>
+                              {sugg.alimenti.map((alimento, i) => (
+                                <div
+                                  key={i}
+                                  className='text-xs bg-white p-1 rounded flex justify-between'
+                                >
+                                  <span>{alimento.nome}</span>
+                                  <span className='text-gray-600'>
+                                    {alimento.porzione}g ={' '}
+                                    {alimento.valore.toFixed(1)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className='grid lg:grid-cols-3 gap-6'>
+          {/* Colonna pasti */}
+          <div className='lg:col-span-2 space-y-4'>
+            <PastoCard
+              titolo='☀️ Colazione'
+              tipoPasto='colazione'
+              icona={Coffee}
+            />
+            <PastoCard
+              titolo='🍎 Spuntino Mattina'
+              tipoPasto='spuntinoMattina'
+              icona={Apple}
+            />
+            <PastoCard titolo='🍽️ Pranzo' tipoPasto='pranzo' icona={Utensils} />
+            <PastoCard
+              titolo='🍪 Spuntino Pomeriggio'
+              tipoPasto='spuntinoPomeriggio'
+              icona={Cookie}
+            />
+            <PastoCard titolo='🌙 Cena' tipoPasto='cena' icona={Moon} />
+          </div>
+
+          {/* Colonna riepilogo */}
+          <div className='space-y-4'>
+            {/* Totali giornalieri */}
+            <div className='bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white'>
+              <div className='flex items-center gap-2 mb-4'>
+                <Activity className='w-6 h-6' />
+                <h2 className='text-xl font-bold'>Totali Giornalieri</h2>
+              </div>
+              <div className='space-y-2 text-sm'>
+                <div className='flex justify-between'>
+                  <span>Proteine:</span>
+                  <span className='font-bold'>
+                    {totaliGiornalieri.proteine.toFixed(1)}g
+                  </span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>Carboidrati:</span>
+                  <span className='font-bold'>
+                    {totaliGiornalieri.carboidrati.toFixed(1)}g
+                  </span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>Grassi:</span>
+                  <span className='font-bold'>
+                    {totaliGiornalieri.grassi.toFixed(1)}g
+                  </span>
+                </div>
+                <div className='flex justify-between'>
+                  <span>Fibre:</span>
+                  <span className='font-bold'>
+                    {totaliGiornalieri.fibre.toFixed(1)}g
+                  </span>
+                </div>
+                <div className='border-t border-white/30 pt-2 mt-2'>
+                  <div className='flex justify-between text-lg'>
+                    <span>Calorie:</span>
+                    <span className='font-bold'>
+                      {totaliGiornalieri.calorie.toFixed(0)} kcal
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Riepilogo Integratori */}
+            {Object.keys(riepilogoIntegratori).length > 0 && (
+              <div className='bg-purple-100 border-2 border-purple-300 rounded-xl shadow-lg p-5'>
+                <div className='flex items-center gap-2 mb-4'>
+                  <Pill className='w-6 h-6 text-purple-700' />
+                  <h2 className='text-xl font-bold text-purple-900'>
+                    Integratori Assunti
+                  </h2>
+                </div>
+                <div className='space-y-2'>
+                  {Object.entries(riepilogoIntegratori).map(
+                    ([nome, conteggio]) => (
+                      <div
+                        key={nome}
+                        className='flex items-center justify-between bg-white p-2 rounded'
+                      >
+                        <span className='text-sm font-medium text-purple-900'>
+                          {nome}
+                        </span>
+                        <span className='bg-purple-600 text-white px-2 py-1 rounded-full text-xs font-bold'>
+                          {conteggio}x
+                        </span>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Micronutrienti */}
+            <div className='bg-white rounded-xl shadow-lg p-5 border-2 border-gray-200'>
+              <div className='flex items-center gap-2 mb-4'>
+                <TrendingUp className='w-6 h-6 text-green-600' />
+                <h2 className='text-xl font-bold text-gray-800'>
+                  Micronutrienti
+                </h2>
+              </div>
+
+              <ProgressBar
+                label='Ferro'
+                valore={totaliGiornalieri.ferro}
+                obiettivo={obiettivi.ferro}
+                unita='mg'
+                colore='bg-red-500'
+              />
+              <ProgressBar
+                label='Calcio'
+                valore={totaliGiornalieri.calcio}
+                obiettivo={obiettivi.calcio}
+                unita='mg'
+                colore='bg-blue-500'
+              />
+              <ProgressBar
+                label='Vitamina B12'
+                valore={totaliGiornalieri.vitB12}
+                obiettivo={obiettivi.vitB12}
+                unita='µg'
+                colore='bg-purple-500'
+              />
+              <ProgressBar
+                label='Vitamina B2'
+                valore={totaliGiornalieri.vitB2}
+                obiettivo={obiettivi.vitB2}
+                unita='mg'
+                colore='bg-pink-500'
+              />
+              <ProgressBar
+                label='Vitamina D'
+                valore={totaliGiornalieri.vitD}
+                obiettivo={obiettivi.vitD}
+                unita='µg'
+                colore='bg-yellow-500'
+              />
+              <ProgressBar
+                label='Omega-3'
+                valore={totaliGiornalieri.omega3}
+                obiettivo={obiettivi.omega3}
+                unita='g'
+                colore='bg-cyan-500'
+              />
+              <ProgressBar
+                label='Iodio'
+                valore={totaliGiornalieri.iodio}
+                obiettivo={obiettivi.iodio}
+                unita='µg'
+                colore='bg-indigo-500'
+              />
+              <ProgressBar
+                label='Zinco'
+                valore={totaliGiornalieri.zinco}
+                obiettivo={obiettivi.zinco}
+                unita='mg'
+                colore='bg-gray-500'
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Modal aggiunta alimento */}
+        {modalePasto && (
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+            <div className='bg-white rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto'>
+              <h2 className='text-2xl font-bold mb-4 text-gray-800'>
+                Aggiungi alimento
+              </h2>
+
+              <div className='space-y-4'>
+                <div>
+                  <label className='block text-sm font-semibold mb-2'>
+                    Alimento
+                  </label>
+                  <select
+                    value={alimentoSelezionato}
+                    onChange={(e) => setAlimentoSelezionato(e.target.value)}
+                    className='w-full p-2 border-2 border-gray-300 rounded-lg'
+                  >
+                    <option value=''>Seleziona...</option>
+                    {alimentiFiltrati.map(([nome]) => (
+                      <option key={nome} value={nome}>
+                        {nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {alimentoSelezionato && (
+                  <>
+                    <div>
+                      <label className='block text-sm font-semibold mb-2'>
+                        Quantità (grammi)
+                      </label>
+                      <input
+                        type='number'
+                        value={quantita}
+                        onChange={(e) => setQuantita(Number(e.target.value))}
+                        min='1'
+                        step='10'
+                        className='w-full p-2 border-2 border-gray-300 rounded-lg'
+                      />
+                      <p className='text-xs text-gray-500 mt-1'>
+                        Porzione standard:{' '}
+                        {ALIMENTI_DATABASE[alimentoSelezionato].porzione}g
+                      </p>
+                    </div>
+
+                    <div className='bg-gray-50 p-3 rounded-lg text-xs'>
+                      <div className='font-semibold mb-2'>
+                        Valori nutrizionali per {quantita}g:
+                      </div>
+                      {(() => {
+                        const a = ALIMENTI_DATABASE[alimentoSelezionato];
+                        const m = quantita / 100;
+                        return (
+                          <div className='grid grid-cols-2 gap-1'>
+                            <div>Proteine: {(a.proteine * m).toFixed(1)}g</div>
+                            <div>
+                              Carboidrati: {(a.carboidrati * m).toFixed(1)}g
+                            </div>
+                            <div>Grassi: {(a.grassi * m).toFixed(1)}g</div>
+                            <div>
+                              Calorie: {(a.calorie * m).toFixed(0)} kcal
+                            </div>
+                            <div>Ferro: {(a.ferro * m).toFixed(1)}mg</div>
+                            <div>Calcio: {(a.calcio * m).toFixed(0)}mg</div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </>
+                )}
+
+                <div className='flex gap-2'>
+                  <button
+                    onClick={() => setModalePasto(null)}
+                    className='flex-1 p-2 bg-gray-200 rounded-lg hover:bg-gray-300'
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={() => {
+                      aggiungiAlimento();
+                      setModalePasto(null);
+                    }}
+                    disabled={!alimentoSelezionato}
+                    className='flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50'
+                  >
+                    Aggiungi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal aggiunta integratore */}
+        {modaleIntegratore && (
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
+            <div className='bg-white rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto'>
+              <h2 className='text-2xl font-bold mb-4 text-purple-800 flex items-center gap-2'>
+                <Pill className='w-6 h-6' />
+                Aggiungi integratore
+              </h2>
+
+              <div className='space-y-4'>
+                <div>
+                  <label className='block text-sm font-semibold mb-2'>
+                    Integratore
+                  </label>
+                  <select
+                    value={integratoreSelezionato}
+                    onChange={(e) => setIntegratoreSelezionato(e.target.value)}
+                    className='w-full p-2 border-2 border-purple-300 rounded-lg'
+                  >
+                    <option value=''>Seleziona...</option>
+                    {Object.entries(INTEGRATORI_DATABASE).map(
+                      ([nome, info]) => (
+                        <option key={nome} value={nome}>
+                          {nome} ({info.importanza})
+                        </option>
+                      )
+                    )}
+                  </select>
+                </div>
+
+                {integratoreSelezionato && (
+                  <div className='bg-purple-50 p-3 rounded-lg border border-purple-200'>
+                    <p className='text-sm mb-2'>
+                      <strong>Dosaggio:</strong>{' '}
+                      {INTEGRATORI_DATABASE[integratoreSelezionato].dosaggio}
+                    </p>
+                    <p className='text-sm'>
+                      <strong>Unità:</strong>{' '}
+                      {INTEGRATORI_DATABASE[integratoreSelezionato].unita}
+                    </p>
+                  </div>
+                )}
+
+                <div className='flex gap-2'>
+                  <button
+                    onClick={() => setModaleIntegratore(null)}
+                    className='flex-1 p-2 bg-gray-200 rounded-lg hover:bg-gray-300'
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    onClick={() => {
+                      aggiungiIntegratore();
+                      setModaleIntegratore(null);
+                    }}
+                    disabled={!integratoreSelezionato}
+                    className='flex-1 p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50'
+                  >
+                    Aggiungi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className='mt-6 text-center text-xs text-gray-500'>
+          🌱 Tracker Vegano PRO v2.0 • Database 100+ alimenti • Tracking
+          integratori completo • AI Suggerimenti
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TrackerNutrizionaleVegano;

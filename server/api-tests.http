@@ -1,0 +1,326 @@
+### ========================================
+### 🌱 VEGAN TRACKER API - Test Endpoints
+### ========================================
+### 
+### Istruzioni:
+### 1. Installa extension "REST Client" su VS Code
+### 2. Avvia il server: cd server && npm run dev
+### 3. Clicca su "Send Request" sopra ogni richiesta
+### 
+
+@baseUrl = http://localhost:5000/api
+@token = your_jwt_token_here
+
+### ========================================
+### ✅ HEALTH CHECK
+### ========================================
+
+### Test connessione server
+GET {{baseUrl}}/health HTTP/1.1
+
+### ========================================
+### 👤 AUTENTICAZIONE
+### ========================================
+
+### Registrazione nuovo utente
+POST {{baseUrl}}/auth/registrazione HTTP/1.1
+Content-Type: application/json
+
+{
+  "nome": "Mario Rossi",
+  "email": "mario.rossi@test.com",
+  "password": "password123"
+}
+
+###
+
+### Login utente
+# @name login
+POST {{baseUrl}}/auth/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "mario.rossi@test.com",
+  "password": "password123"
+}
+
+###
+
+### Ottieni token dal login
+@authToken = {{login.response.body.token}}
+
+###
+
+### Ottieni profilo utente corrente
+GET {{baseUrl}}/auth/me HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+### ========================================
+### 🥗 ALIMENTI - Endpoints Pubblici
+### ========================================
+
+### GET - Tutti gli alimenti
+GET {{baseUrl}}/alimenti HTTP/1.1
+
+###
+
+### GET - Alimenti con paginazione
+GET {{baseUrl}}/alimenti?page=1&limit=20 HTTP/1.1
+
+###
+
+### GET - Alimenti per categoria
+GET {{baseUrl}}/alimenti?categoria=colazione HTTP/1.1
+
+###
+
+### GET - Ricerca alimenti
+GET {{baseUrl}}/alimenti?search=lenticchie HTTP/1.1
+
+###
+
+### GET - Alimenti con filtri
+GET {{baseUrl}}/alimenti?altoProteico=true&categoria=pranzo HTTP/1.1
+
+###
+
+### GET - Alimenti ipocalorici
+GET {{baseUrl}}/alimenti?ipocalorico=true HTTP/1.1
+
+###
+
+### GET - Ricerca avanzata
+GET {{baseUrl}}/alimenti/ricerca?q=proteico HTTP/1.1
+
+###
+
+### GET - Alimenti per categoria specifica
+GET {{baseUrl}}/alimenti/categoria/colazione HTTP/1.1
+
+###
+
+### GET - Singolo alimento per ID
+# Sostituisci con un ID reale dal database
+GET {{baseUrl}}/alimenti/67488a3b9d8f0c1234567890 HTTP/1.1
+
+### ========================================
+### 🥗 ALIMENTI - Endpoints Autenticati
+### ========================================
+
+### POST - Crea alimento custom (richiede autenticazione)
+POST {{baseUrl}}/alimenti HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "nome": "Seitan fatto in casa",
+  "categoria": "pranzo",
+  "proteine": 25,
+  "carboidrati": 4,
+  "grassi": 1.9,
+  "fibre": 0.2,
+  "ferro": 2.8,
+  "calcio": 25,
+  "vitB12": 0,
+  "vitB2": 0.05,
+  "vitD": 0,
+  "omega3": 0,
+  "iodio": 0.5,
+  "zinco": 1.1,
+  "calorie": 120,
+  "porzione": 100,
+  "note": "Ricetta casalinga con farina di glutine"
+}
+
+###
+
+### GET - I miei alimenti custom
+GET {{baseUrl}}/alimenti/utente/miei HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+###
+
+### PUT - Aggiorna alimento custom
+# Sostituisci con ID del tuo alimento
+PUT {{baseUrl}}/alimenti/67488a3b9d8f0c1234567890 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "proteine": 26,
+  "note": "Aggiornato con nuovi valori nutrizionali"
+}
+
+###
+
+### DELETE - Elimina alimento custom
+# Sostituisci con ID del tuo alimento
+DELETE {{baseUrl}}/alimenti/67488a3b9d8f0c1234567890 HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+### ========================================
+### 📅 GIORNATE ALIMENTARI
+### ========================================
+
+### GET - Giornate dell'utente
+GET {{baseUrl}}/giornate HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+###
+
+### GET - Giornata specifica per data
+GET {{baseUrl}}/giornate?data=2025-10-28 HTTP/1.1
+Authorization: Bearer {{authToken}}
+
+###
+
+### POST - Crea nuova giornata
+POST {{baseUrl}}/giornate HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "data": "2025-10-28",
+  "pasti": {
+    "colazione": [
+      {
+        "nome": "Avena (fiocchi)",
+        "quantita": 50,
+        "proteine": 6.6,
+        "carboidrati": 29.35,
+        "grassi": 3.5,
+        "calorie": 194.5
+      }
+    ],
+    "pranzo": [
+      {
+        "nome": "Lenticchie rosse",
+        "quantita": 150,
+        "proteine": 13.5,
+        "carboidrati": 31.2,
+        "grassi": 0.6,
+        "calorie": 174
+      }
+    ],
+    "cena": []
+  },
+  "totaliGiornalieri": {
+    "proteine": 20.1,
+    "carboidrati": 60.55,
+    "grassi": 4.1,
+    "calorie": 368.5
+  }
+}
+
+###
+
+### PUT - Aggiorna giornata
+# Sostituisci con ID della tua giornata
+PUT {{baseUrl}}/giornate/67488b5c9d8f0c9876543210 HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "pasti": {
+    "colazione": [
+      {
+        "nome": "Avena (fiocchi)",
+        "quantita": 60,
+        "proteine": 7.92,
+        "calorie": 233.4
+      }
+    ],
+    "pranzo": [],
+    "cena": []
+  }
+}
+
+### ========================================
+### 🧪 TEST SPECIFICI
+### ========================================
+
+### Test - Alimenti con più filtri combinati
+GET {{baseUrl}}/alimenti?categoria=pranzo&altoProteico=true&search=lenticchie HTTP/1.1
+
+###
+
+### Test - Paginazione con ricerca
+GET {{baseUrl}}/alimenti?search=semi&page=1&limit=5 HTTP/1.1
+
+###
+
+### Test - Categoria integratori
+GET {{baseUrl}}/alimenti?categoria=integratore HTTP/1.1
+
+###
+
+### Test - Ordine alfabetico (gestito automaticamente dal server)
+GET {{baseUrl}}/alimenti?categoria=colazione HTTP/1.1
+
+### ========================================
+### 📊 TEST PERFORMANCE
+### ========================================
+
+### Test - Caricamento 1000 alimenti (se ne hai tanti)
+GET {{baseUrl}}/alimenti?limit=1000 HTTP/1.1
+
+###
+
+### Test - Multiple ricerche rapide
+GET {{baseUrl}}/alimenti?search=a HTTP/1.1
+###
+GET {{baseUrl}}/alimenti?search=b HTTP/1.1
+###
+GET {{baseUrl}}/alimenti?search=c HTTP/1.1
+
+### ========================================
+### ❌ TEST ERRORI (dovrebbero fallire)
+### ========================================
+
+### Test - Autenticazione mancante (401)
+POST {{baseUrl}}/alimenti HTTP/1.1
+Content-Type: application/json
+
+{
+  "nome": "Test senza auth",
+  "categoria": "pranzo"
+}
+
+###
+
+### Test - Categoria non valida (400)
+POST {{baseUrl}}/alimenti HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "nome": "Test categoria errata",
+  "categoria": "categoria_inesistente",
+  "calorie": 100
+}
+
+###
+
+### Test - ID non esistente (404)
+GET {{baseUrl}}/alimenti/000000000000000000000000 HTTP/1.1
+
+###
+
+### Test - Token non valido (401)
+GET {{baseUrl}}/alimenti/utente/miei HTTP/1.1
+Authorization: Bearer token_non_valido_12345
+
+### ========================================
+### 📝 NOTE
+### ========================================
+###
+### Variabili disponibili:
+### - {{baseUrl}} = http://localhost:5000/api
+### - {{authToken}} = Token JWT ottenuto dal login
+###
+### Shortcuts VS Code:
+### - Ctrl+Alt+R = Invia richiesta
+### - Ctrl+Alt+E = Invia tutte le richieste
+###
+### Response viene mostrata in un nuovo tab
+### ========================================

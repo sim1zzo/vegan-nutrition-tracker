@@ -1,11 +1,10 @@
-// server/server.js
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import giornateRoutes from './routes/giornate.js';
-import alimentiRoutes from './routes/alimenti.js'; // <-- Importa le nuove routes
+import alimentiRoutes from './routes/alimenti.js';
 
 // Connetti DB
 connectDB();
@@ -19,7 +18,7 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/giornate', giornateRoutes);
-app.use('/api/alimenti', alimentiRoutes); // <-- Usa le nuove routes
+app.use('/api/alimenti', alimentiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

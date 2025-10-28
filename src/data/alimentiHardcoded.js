@@ -1,10 +1,5 @@
-// server/seedAlimenti.js
-import 'dotenv/config'; // Per caricare MONGODB_URI da .env
-import mongoose from 'mongoose';
-import connectDB from './config/database.js'; // Assicurati che il percorso sia corretto
-import Alimento from './models/Alimento.js'; // Assicurati che il percorso sia corretto
-
-const ALIMENTI_DATABASE = {
+// Alimenti hardcoded - usati come fallback quando backend non disponibile
+export const ALIMENTI_HARDCODED = {
   // COLAZIONE
   'Avena (fiocchi)': {
     categoria: 'colazione',
@@ -1553,65 +1548,3 @@ const ALIMENTI_DATABASE = {
     porzione: 50,
   },
 };
-
-const INTEGRATORI_DATABASE = {
-  'Vitamina B12 (1000µg)': { categoria: 'integratore', vitB12: 1000 },
-  'Vitamina D3 (2000 UI)': { categoria: 'integratore', vitD: 50 },
-  'Omega-3 DHA+EPA': { categoria: 'integratore', omega3: 1.0 },
-  'Ferro (14mg)': { categoria: 'integratore', ferro: 14 },
-  'Zinco (10mg)': { categoria: 'integratore', zinco: 10 },
-  'Iodio (150µg)': { categoria: 'integratore', iodio: 150 },
-  'Calcio (500mg)': { categoria: 'integratore', calcio: 500 },
-  'Multivitaminico Vegano': {
-    categoria: 'integratore',
-    vitB12: 25,
-    vitB2: 1.6,
-    vitD: 20,
-    ferro: 7,
-    zinco: 5,
-    iodio: 75,
-    calcio: 200,
-  },
-};
-
-const seedDatabase = async () => {
-  try {
-    await connectDB(); // 🔗 Usa la connessione centralizzata
-    console.log('✅ Connessione a MongoDB stabilita');
-
-    // Pulisce la collezione prima del seed
-    await Alimento.deleteMany({});
-    console.log('🧹 Collezione "Alimento" pulita');
-
-    // Prepara i documenti da inserire
-    const alimenti = Object.entries(ALIMENTI_DATABASE).map(
-      ([nome, valori]) => ({
-        nome,
-        ...valori,
-      })
-    );
-
-    const integratori = Object.entries(INTEGRATORI_DATABASE).map(
-      ([nome, valori]) => ({
-        nome,
-        ...valori,
-      })
-    );
-
-    // Inserisce nel database
-    await Alimento.insertMany([...alimenti, ...integratori]);
-
-    console.log(
-      `🍽️ Inseriti ${alimenti.length} alimenti e ${integratori.length} integratori.`
-    );
-
-    await mongoose.connection.close();
-    console.log('🔌 Disconnesso da MongoDB');
-  } catch (err) {
-    console.error('❌ Errore durante il seed:', err);
-    process.exit(1);
-  }
-};
-
-// Avvio del seed
-seedDatabase();

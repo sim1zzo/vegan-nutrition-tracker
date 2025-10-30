@@ -1,6 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Save, X, Package } from 'lucide-react';
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Save,
+  X,
+  Package,
+  Globe,
+  Lock,
+  AlertTriangle,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+// Stato iniziale pulito per il form
+const initialState = {
+  nome: '',
+  categoria: 'pranzo',
+  proteine: 0,
+  carboidrati: 0,
+  grassi: 0,
+  fibre: 0,
+  ferro: 0,
+  calcio: 0,
+  vitB12: 0,
+  vitB2: 0,
+  vitD: 0,
+  omega3: 0,
+  iodio: 0,
+  zinco: 0,
+  calorie: 0,
+  porzione: 100,
+  isPublico: false, // Flag per la visibilità
+};
 
 const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
   const { api } = useAuth();
@@ -11,24 +42,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
   const [error, setError] = useState('');
 
   // Form state
-  const [formData, setFormData] = useState({
-    nome: '',
-    categoria: 'pranzo',
-    proteine: 0,
-    carboidrati: 0,
-    grassi: 0,
-    fibre: 0,
-    ferro: 0,
-    calcio: 0,
-    vitB12: 0,
-    vitB2: 0,
-    vitD: 0,
-    omega3: 0,
-    iodio: 0,
-    zinco: 0,
-    calorie: 0,
-    porzione: 100,
-  });
+  const [formData, setFormData] = useState(initialState);
 
   // Carica alimenti personalizzati
   useEffect(() => {
@@ -38,6 +52,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
   const caricaAlimenti = async () => {
     try {
       setLoading(true);
+      // La rotta 'miei' ora restituisce un array completo
       const response = await api.get('/alimenti/miei');
       setAlimenti(response.data.alimentiArray || []);
     } catch (error) {
@@ -48,24 +63,61 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
     }
   };
 
+  // Gestore modifiche form (gestisce testo, numeri e checkbox)
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+
+    let val;
+    if (type === 'checkbox') {
+      val = checked;
+    } else if (type === 'number') {
+      // Permette all'utente di cancellare il campo (diventa stringa vuota)
+      // Verrà convertito in 0 prima di salvare
+      val = value === '' ? '' : value;
+    } else {
+      val = value;
+    }
+
     setFormData({
       ...formData,
-      [name]: value === '' ? 0 : parseFloat(value) || value,
+      [name]: val,
     });
+  };
+
+  // Helper per assicurarsi che i tipi di dato siano corretti prima dell'invio
+  const parseFormPrimaDiSalvare = (dati) => {
+    const datiPuliti = { ...dati };
+    for (const key in datiPuliti) {
+      // Converte tutti i campi numerici (anche stringhe vuote) in numeri (0)
+      if (key !== 'nome' && key !== 'categoria' && key !== 'isPublico') {
+        datiPuliti[key] = parseFloat(datiPuliti[key]) || 0;
+      }
+    }
+    // Assicura che gli altri campi siano del tipo corretto
+    datiPuliti.nome = String(datiPuliti.nome).trim();
+    datiPuliti.categoria = String(datiPuliti.categoria);
+    datiPuliti.isPublico = Boolean(datiPuliti.isPublico);
+
+    return datiPuliti;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    const datiDaInviare = parseFormPrimaDiSalvare(formData);
+
+    if (!datiDaInviare.nome || !datiDaInviare.categoria) {
+      setError('Nome e Categoria sono obbligatori.');
+      return;
+    }
+
     try {
       if (alimentoCorrente) {
         // UPDATE
         const response = await api.put(
           `/alimenti/${alimentoCorrente._id}`,
-          formData
+          datiDaInviare
         );
         setAlimenti(
           alimenti.map((a) =>
@@ -74,7 +126,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
         );
       } else {
         // CREATE
-        const response = await api.post('/alimenti', formData);
+        const response = await api.post('/alimenti', datiDaInviare);
         setAlimenti([...alimenti, response.data.alimento]);
         onAlimentoCreato?.(response.data.alimento);
       }
@@ -102,9 +154,10 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
 
   const handleModifica = (alimento) => {
     setAlimentoCorrente(alimento);
+    // Popola il form con i dati dell'alimento
     setFormData({
-      nome: alimento.nome,
-      categoria: alimento.categoria,
+      nome: alimento.nome || '',
+      categoria: alimento.categoria || 'pranzo',
       proteine: alimento.proteine || 0,
       carboidrati: alimento.carboidrati || 0,
       grassi: alimento.grassi || 0,
@@ -119,6 +172,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
       zinco: alimento.zinco || 0,
       calorie: alimento.calorie || 0,
       porzione: alimento.porzione || 100,
+      isPublico: alimento.isPublico || false, // Popola il flag
     });
     setModalAperto(true);
   };
@@ -130,24 +184,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
 
   const resetForm = () => {
     setAlimentoCorrente(null);
-    setFormData({
-      nome: '',
-      categoria: 'pranzo',
-      proteine: 0,
-      carboidrati: 0,
-      grassi: 0,
-      fibre: 0,
-      ferro: 0,
-      calcio: 0,
-      vitB12: 0,
-      vitB2: 0,
-      vitD: 0,
-      omega3: 0,
-      iodio: 0,
-      zinco: 0,
-      calorie: 0,
-      porzione: 100,
-    });
+    setFormData(initialState); // Usa lo stato iniziale pulito
     setError('');
   };
 
@@ -156,7 +193,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
       <div className='max-w-6xl mx-auto'>
         {/* Header */}
         <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
-          <div className='flex items-center justify-between'>
+          <div className='flex items-center justify-between flex-wrap gap-4'>
             <div className='flex items-center gap-3'>
               <div className='w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center'>
                 <Package className='w-6 h-6 text-white' />
@@ -223,13 +260,31 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                 >
                   <div className='flex items-start justify-between'>
                     <div className='flex-1'>
-                      <div className='flex items-center gap-3 mb-2'>
+                      <div className='flex items-center gap-3 mb-2 flex-wrap'>
                         <h3 className='font-semibold text-lg text-gray-800'>
                           {alimento.nome}
                         </h3>
                         <span className='text-xs bg-green-100 text-green-700 px-2 py-1 rounded'>
                           {alimento.categoria}
                         </span>
+                        {/* BADGE PUBBLICO/PRIVATO */}
+                        {alimento.isPublico ? (
+                          <span className='text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded flex items-center gap-1'>
+                            <Globe className='w-3 h-3' />
+                            Pubblico
+                            {/* Mostra lo stato di verifica */}
+                            {!alimento.verificato && (
+                              <span className='ml-1 flex items-center gap-1 text-yellow-700'>
+                                (<AlertTriangle className='w-3 h-3' /> In
+                                verifica)
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className='text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded flex items-center gap-1'>
+                            <Lock className='w-3 h-3' /> Privato
+                          </span>
+                        )}
                       </div>
 
                       {/* Valori Nutrizionali */}
@@ -312,7 +367,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
       {modalAperto && (
         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
           <div className='bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto'>
-            <div className='sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between'>
+            <div className='sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10'>
               <h2 className='text-xl font-bold text-gray-800'>
                 {alimentoCorrente ? 'Modifica Alimento' : 'Nuovo Alimento'}
               </h2>
@@ -357,9 +412,58 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                   >
                     <option value='colazione'>Colazione</option>
                     <option value='pranzo'>Pranzo/Cena</option>
+                    <option value='spuntino'>Spuntino</option>
                     <option value='verdura'>Verdura</option>
                     <option value='condimento'>Condimento</option>
+                    <option value='integratore'>Integratore</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Porzione e Visibilità */}
+              <div className='grid md:grid-cols-2 gap-4'>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Porzione Standard (g) *
+                  </label>
+                  <input
+                    type='number'
+                    name='porzione'
+                    value={formData.porzione}
+                    onChange={handleChange}
+                    className='w-full px-4 py-2 border border-gray-300 rounded-lg'
+                    step='1'
+                    min='1'
+                    placeholder='100'
+                    required
+                  />
+                </div>
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>
+                    Visibilità
+                  </label>
+                  <div className='flex items-center gap-3 bg-gray-50 border border-gray-200 p-3 rounded-lg h-full'>
+                    <input
+                      type='checkbox'
+                      name='isPublico'
+                      id='isPublico'
+                      checked={formData.isPublico}
+                      onChange={handleChange}
+                      className='h-5 w-5 text-green-600 rounded focus:ring-green-500'
+                    />
+                    <div>
+                      <label
+                        htmlFor='isPublico'
+                        className='font-medium text-gray-800'
+                      >
+                        Rendi Pubblico
+                      </label>
+                      <p className='text-xs text-gray-600'>
+                        Proponi questo alimento per il database pubblico
+                        (richiede verifica).
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -381,6 +485,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -395,6 +500,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -409,6 +515,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -423,6 +530,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                 </div>
@@ -446,6 +554,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -460,6 +569,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -474,6 +584,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -488,6 +599,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                 </div>
@@ -511,6 +623,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -525,6 +638,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.01'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -539,6 +653,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                   <div>
@@ -553,41 +668,27 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                       className='w-full px-3 py-2 border border-gray-300 rounded-lg'
                       step='0.1'
                       min='0'
+                      placeholder='0'
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Calorie e Porzione */}
-              <div className='grid md:grid-cols-2 gap-4'>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-2'>
-                    Calorie (kcal per 100g)
-                  </label>
-                  <input
-                    type='number'
-                    name='calorie'
-                    value={formData.calorie}
-                    onChange={handleChange}
-                    className='w-full px-4 py-2 border border-gray-300 rounded-lg'
-                    step='1'
-                    min='0'
-                  />
-                </div>
-                <div>
-                  <label className='block text-sm font-medium text-gray-700 mb-2'>
-                    Porzione Standard (g)
-                  </label>
-                  <input
-                    type='number'
-                    name='porzione'
-                    value={formData.porzione}
-                    onChange={handleChange}
-                    className='w-full px-4 py-2 border border-gray-300 rounded-lg'
-                    step='1'
-                    min='1'
-                  />
-                </div>
+              {/* Calorie */}
+              <div>
+                <label className='block text-sm font-medium text-gray-700 mb-2'>
+                  Calorie (kcal per 100g)
+                </label>
+                <input
+                  type='number'
+                  name='calorie'
+                  value={formData.calorie}
+                  onChange={handleChange}
+                  className='w-full px-4 py-2 border border-gray-300 rounded-lg'
+                  step='1'
+                  min='0'
+                  placeholder='0'
+                />
               </div>
 
               {/* Buttons */}

@@ -33,6 +33,18 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Interceptor per gestire errori 401 (logout automatico)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/'; // Ricarica per mostrare il login
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
     } catch (error) {
       console.error('Errore caricamento profilo:', error);
-      logout();
+      logout(); // Esegui logout se il token non è valido
     } finally {
       setLoading(false);
     }
@@ -106,18 +118,50 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  // Aggiorna profilo
+  // Aggiorna profilo (dati anagrafici, peso, preferenze, ecc.)
   const aggiornaProfilo = async (dati) => {
     try {
       const response = await api.put('/auth/profilo', dati);
       setUser(response.data.user);
-      return { success: true };
+      return { success: true, message: 'Profilo aggiornato con successo!' };
     } catch (error) {
       return {
         success: false,
         message:
           error.response?.data?.message ||
           "Errore nell'aggiornamento del profilo",
+      };
+    }
+  };
+
+  // === NUOVA FUNZIONE ===
+  // Aggiorna password
+  const cambiaPassword = async (passwordCorrente, nuovaPassword) => {
+    try {
+      await api.put('/auth/password', { passwordCorrente, nuovaPassword });
+      return { success: true, message: 'Password aggiornata con successo!' };
+    } catch (error) {
+      return {
+        success: false,
+        message: error.response?.data?.message || 'Errore nel cambio password',
+      };
+    }
+  };
+
+  // === NUOVA FUNZIONE ===
+  // Elimina account
+  const eliminaAccount = async (password) => {
+    try {
+      // Per axios.delete, i dati del body vanno passati sotto 'data'
+      await api.delete('/auth/account', { data: { password } });
+      logout(); // Esegui logout dopo eliminazione
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Errore nell'eliminazione dell'account",
       };
     }
   };
@@ -131,6 +175,8 @@ export const AuthProvider = ({ children }) => {
     logout,
     aggiornaProfilo,
     api, // Esponi api per uso in altri componenti
+    cambiaPassword, // Esponi nuova funzione
+    eliminaAccount, // Esponi nuova funzione
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

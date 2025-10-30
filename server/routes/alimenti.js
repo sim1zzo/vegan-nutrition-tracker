@@ -4,9 +4,24 @@ import { proteggiRoute } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Helper per generare tags (visto in seedAlimenti.js)
+function generaTags(nome, categoria) {
+  const tags = [categoria];
+  const nomeLower = nome.toLowerCase();
+  if (nomeLower.includes('latte')) tags.push('latte vegetale', 'bevanda');
+  if (nomeLower.includes('lenticchie')) tags.push('legumi', 'proteine');
+  if (nomeLower.includes('ceci')) tags.push('legumi', 'proteine');
+  if (nomeLower.includes('fagioli')) tags.push('legumi', 'proteine');
+  if (nomeLower.includes('soia')) tags.push('soia', 'proteine');
+  if (nomeLower.includes('integrale')) tags.push('integrale', 'fibre');
+  if (nomeLower.includes('semi')) tags.push('semi', 'grassi buoni');
+  if (nomeLower.includes('olio')) tags.push('grassi', 'condimento');
+  return tags;
+}
+
 // ==================== ROUTES PUBBLICHE ====================
 
-// GET /api/alimenti - Lista tutti gli alimenti pubblici
+// GET /api/alimenti - Lista tutti gli alimenti pubblici E verificati
 router.get('/', async (req, res) => {
   try {
     const {
@@ -18,7 +33,8 @@ router.get('/', async (req, res) => {
       limit = 1000,
     } = req.query;
 
-    const query = { isPublico: true };
+    // CORREZIONE: Mostra solo alimenti pubblici E verificati
+    const query = { isPublico: true, verificato: true };
 
     if (categoria && categoria !== 'tutti') {
       query.categoria = categoria;
@@ -56,7 +72,7 @@ router.get('/', async (req, res) => {
       totalPages: Math.ceil(count / limit),
       currentPage: page,
       alimenti: alimentiFormattati,
-      alimentiArray: alimenti,
+      alimentiArray: alimenti, // Utile per il frontend
     });
   } catch (error) {
     console.error('Errore GET alimenti:', error);
@@ -68,7 +84,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/alimenti/categoria/:categoria - Alimenti per categoria
+// GET /api/alimenti/categoria/:categoria - Alimenti pubblici E verificati per categoria
 router.get('/categoria/:categoria', async (req, res) => {
   try {
     const { categoria } = req.params;
@@ -76,6 +92,7 @@ router.get('/categoria/:categoria', async (req, res) => {
     const alimenti = await Alimento.find({
       categoria,
       isPublico: true,
+      verificato: true, // Aggiunto controllo
     }).sort({ nome: 1 });
 
     const alimentiFormattati = {};
@@ -104,9 +121,10 @@ router.get('/categoria/:categoria', async (req, res) => {
 // GET /api/alimenti/miei - Lista alimenti personalizzati dell'utente
 router.get('/miei', proteggiRoute, async (req, res) => {
   try {
+    // <-- MODIFICA CHIAVE: Rimuovi 'isPublico: false'
+    // Deve trovare TUTTI gli alimenti creati dall'utente.
     const alimenti = await Alimento.find({
       creatoDA: req.user._id,
-      isPublico: false,
     }).sort({ nome: 1 });
 
     const alimentiFormattati = {};
@@ -118,7 +136,7 @@ router.get('/miei', proteggiRoute, async (req, res) => {
       success: true,
       count: alimenti.length,
       alimenti: alimentiFormattati,
-      alimentiArray: alimenti,
+      alimentiArray: alimenti, // Invia l'array completo per la gestione
     });
   } catch (error) {
     console.error('Errore GET alimenti personalizzati:', error);
@@ -150,6 +168,7 @@ router.post('/', proteggiRoute, async (req, res) => {
       zinco,
       calorie,
       porzione,
+      isPublico, // <-- NUOVO: Accetta il flag dal body
     } = req.body;
 
     // Validazione campi obbligatori
@@ -160,16 +179,16 @@ router.post('/', proteggiRoute, async (req, res) => {
       });
     }
 
-    // Verifica se esiste già un alimento con lo stesso nome per questo utente
+    // Modifica: Verifica se esiste già un alimento (pubblico o privato dell'utente) con lo stesso nome
     const alimentoEsistente = await Alimento.findOne({
-      nome: { $regex: `^${nome}$`, $options: 'i' },
-      creatoDA: req.user._id,
+      nome: { $regex: `^${nome}$`, $options: 'i' }, // Case-insensitive exact match
+      $or: [{ isPublico: true }, { creatoDA: req.user._id }],
     });
 
     if (alimentoEsistente) {
       return res.status(400).json({
         success: false,
-        message: 'Hai già un alimento con questo nome',
+        message: 'Esiste già un alimento (pubblico o privato) con questo nome',
       });
     }
 
@@ -192,7 +211,9 @@ router.post('/', proteggiRoute, async (req, res) => {
       calorie: calorie || 0,
       porzione: porzione || 100,
       creatoDA: req.user._id,
-      isPublico: false,
+      isPublico: isPublico || false, // Modifica: Usa il flag o imposta a false
+      verificato: false, // Gli alimenti custom non sono mai verificati all'inizio
+      tags: generaTags(nome, categoria),
     });
 
     // Aggiungi alimento alla lista personalizzata dell'utente
@@ -202,13 +223,20 @@ router.post('/', proteggiRoute, async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Alimento creato con successo',
-      alimento: nuovoAlimento.toFrontendFormat(),
+      alimento: nuovoAlimento, // Modifica: Restituisci l'oggetto intero
     });
   } catch (error) {
     console.error('Errore POST alimento:', error);
+    // Gestione errore duplicato (anche se il check sopra dovrebbe prenderlo)
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Esiste già un alimento con questo nome.',
+      });
+    }
     res.status(500).json({
       success: false,
-      message: 'Errore nella creazione dell\'alimento',
+      message: "Errore nella creazione dell'alimento",
       error: error.message,
     });
   }
@@ -255,6 +283,7 @@ router.put('/:id', proteggiRoute, async (req, res) => {
       'zinco',
       'calorie',
       'porzione',
+      'isPublico', // <-- NUOVO: Campo aggiornabile
     ];
 
     campiModificabili.forEach((campo) => {
@@ -263,18 +292,35 @@ router.put('/:id', proteggiRoute, async (req, res) => {
       }
     });
 
+    // Se l'alimento viene reso pubblico, resetta la verifica
+    if (req.body.isPublico === true && alimento.isModified('isPublico')) {
+      alimento.verificato = false;
+    }
+
+    // Rigenera i tags se nome o categoria cambiano
+    if (alimento.isModified('nome') || alimento.isModified('categoria')) {
+      alimento.tags = generaTags(alimento.nome, alimento.categoria);
+    }
+
     await alimento.save();
 
     res.json({
       success: true,
       message: 'Alimento aggiornato con successo',
-      alimento: alimento.toFrontendFormat(),
+      alimento: alimento, // Modifica: Restituisci l'oggetto intero
     });
   } catch (error) {
     console.error('Errore PUT alimento:', error);
+    // Gestione errore duplicato
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Esiste già un alimento con questo nome.',
+      });
+    }
     res.status(500).json({
       success: false,
-      message: 'Errore nell\'aggiornamento dell\'alimento',
+      message: "Errore nell'aggiornamento dell'alimento",
       error: error.message,
     });
   }
@@ -309,7 +355,7 @@ router.delete('/:id', proteggiRoute, async (req, res) => {
     await req.user.save();
 
     // Elimina l'alimento
-    await alimento.deleteOne();
+    await alimento.deleteOne(); // Usa deleteOne() sull'istanza
 
     res.json({
       success: true,
@@ -319,7 +365,7 @@ router.delete('/:id', proteggiRoute, async (req, res) => {
     console.error('Errore DELETE alimento:', error);
     res.status(500).json({
       success: false,
-      message: 'Errore nell\'eliminazione dell\'alimento',
+      message: "Errore nell'eliminazione dell'alimento",
       error: error.message,
     });
   }

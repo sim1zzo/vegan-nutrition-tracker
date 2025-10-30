@@ -852,7 +852,7 @@ const TrackerNutrizionaleVegano = () => {
             )}
           </div>
           <p className='text-xs text-gray-500'>
-            Tracker Nutrizionale Vegano © 2025
+            Tracker Nutrizionale Vegano © 2025 • Creato da  Simone Izzo
           </p>
         </div>
       </div>

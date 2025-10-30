@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
@@ -8,85 +8,73 @@ import LoginForm from './components/LoginForm';
 import Registrazione from './components/Registrazione';
 import TrackerNutrizionaleVegano from './TrackerNutrizionaleVegano'; // Questa è la tua "Home"
 import GestioneAlimenti from './components/GestioneAlimenti';
-import Profilo from './components/Profilo';
-import Impostazioni from './components/Impostazioni';
-import GraficiAndamento from './components/GraficiAndamento'; // <-- IMPORTA
-// (Puoi creare un componente "PaginaStorico" se vuoi, o linkare al tracker con date)
+import Profilo from './components/Profilo'; // Dallo step precedente
+import Impostazioni from './components/Impostazioni'; // Dallo step precedente
 
 // Componente helper per le rotte pubbliche (Login/Registrazione)
+// Impedisce a un utente loggato di vedere la pagina di login
 const PublicRoute = ({ children }) => {
-  // ... (codice invariato) ...
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full'></div>
+      </div>
+    );
+  }
+  return user ? <Navigate to='/' replace /> : children;
 };
 
-// Componente wrapper per Modal (per usarli come pagine)
-const GraficiPage = () => (
-  <GraficiAndamento onClose={() => window.history.back()} />
-);
-// (In alternativa, puoi creare una pagina vera e propria che importa GraficiAndamento)
-
 function App() {
-  const { user, loading } = useAuth();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { loading } = useAuth();
 
   if (loading) {
-    // ... (codice invariato) ...
-  }
-
-  // Se non loggato, mostra login
-  if (!user) {
     return (
-      <Routes>
-        <Route
-          path='/login'
-          element={
-            <PublicRoute>
-              <LoginForm />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path='/registrazione'
-          element={
-            <PublicRoute>
-              <Registrazione />
-            </PublicRoute>
-          }
-        />
-        {/* Se non loggato, qualsiasi altra rotta reindirizza a /login */}
-        <Route path='*' element={<Navigate to='/login' replace />} />
-      </Routes>
+      <div className='min-h-screen flex items-center justify-center'>
+        <div className='animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full'></div>
+      </div>
     );
   }
 
-  // Utente loggato
   return (
     <Routes>
+      {/* --- Rotte Pubbliche (Solo per utenti non loggati) --- */}
+      <Route
+        path='/login'
+        element={
+          <PublicRoute>
+            <LoginForm />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path='/registrazione'
+        element={
+          <PublicRoute>
+            <Registrazione />
+          </PublicRoute>
+        }
+      />
+
       {/* --- Rotte Protette (Solo per utenti loggati) --- */}
+      {/* Tutte usano ProtectedRoute, che renderizza AppLayout (con Header) */}
       <Route element={<ProtectedRoute />}>
         <Route
           path='/'
-          element={<TrackerNutrizionaleVegano key={refreshKey} />} // La tua Home
+          element={<TrackerNutrizionaleVegano />} // La tua Home
         />
         <Route
           path='/alimenti'
-          element={
-            <GestioneAlimenti
-              onAlimentoCreato={() => setRefreshKey((k) => k + 1)}
-            />
-          }
+          element={<GestioneAlimenti />} // Endpoint per "I Miei Alimenti"
         />
-        <Route path='/profilo' element={<Profilo />} />
-        <Route path='/impostazioni' element={<Impostazioni />} />
-        {/* --- NUOVE ROTTE --- */}
         <Route
-          path='/grafici'
-          element={<GraficiPage />} // Pagina per i grafici
+          path='/profilo'
+          element={<Profilo />} // Endpoint per "Profilo"
         />
-        {/* Per lo "Storico", non serve una nuova pagina. 
-          Il componente `CalendarioNavigazione` carica già i giorni passati 
-          semplicemente cambiando l'URL a /?data=...
-          Se vuoi una lista, puoi creare un componente <Storico />
-        */}
+        <Route
+          path='/impostazioni'
+          element={<Impostazioni />} // Endpoint per "Impostazioni"
+        />
       </Route>
 
       {/* Qualsiasi altra rotta non trovata, reindirizza alla home */}

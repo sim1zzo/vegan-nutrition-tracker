@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Calendar,
   Coffee,
@@ -17,16 +11,11 @@ import {
   Activity,
   AlertCircle,
   RefreshCw,
-  ChevronLeft, // <-- Importato
-  ChevronRight, // <-- Importato
-  Save, // <-- Importato
-  CalendarDays, // <-- Importato
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 
-// Database alimenti fallback (INVARIATO)
+// Database alimenti fallback (se MongoDB offline)
 const ALIMENTI_FALLBACK = {
-  // ... (stesso contenuto di prima)
   'Avena (fiocchi)': {
     categoria: 'colazione',
     proteine: 13.2,
@@ -148,16 +137,7 @@ const ALIMENTI_FALLBACK = {
   },
 };
 
-// Stato iniziale pasti vuoto
-const PASTI_VUOTI = {
-  colazione: [],
-  spuntinoMattina: [],
-  pranzo: [],
-  spuntinoPomeriggio: [],
-  cena: [],
-};
-
-// ⭐ COMPONENTE PASTO CARD (INVARIATO)
+// ⭐ COMPONENTE PASTO CARD
 const PastoCard = ({
   titolo,
   tipoPasto,
@@ -167,7 +147,6 @@ const PastoCard = ({
   setModalePasto,
   rimuoviAlimento,
 }) => {
-  // ... (stesso contenuto di prima)
   const alimentiPasto = pasti[tipoPasto] || [];
 
   const totaliPasto = useMemo(() => {
@@ -259,9 +238,8 @@ const PastoCard = ({
   );
 };
 
-// ⭐ COMPONENTE BARRA PROGRESSO (INVARIATO)
+// ⭐ COMPONENTE BARRA PROGRESSO
 const BarraProgresso = ({ label, valore, obiettivo, unita = 'g' }) => {
-  // ... (stesso contenuto di prima)
   const percentuale = Math.min((valore / obiettivo) * 100, 100);
   let colore = 'bg-green-500';
   let testoColore = 'text-green-600';
@@ -300,50 +278,30 @@ const BarraProgresso = ({ label, valore, obiettivo, unita = 'g' }) => {
   );
 };
 
-// ⭐ FUNZIONI HELPER DATA
-const formattaData = (date) => {
-  return date.toISOString().split('T')[0]; // Ritorna YYYY-MM-DD
-};
-
-const formattaDataUI = (date) => {
-  const oggi = new Date();
-  const ieri = new Date(oggi);
-  ieri.setDate(ieri.getDate() - 1);
-
-  if (formattaData(date) === formattaData(oggi)) return 'Oggi';
-  if (formattaData(date) === formattaData(ieri)) return 'Ieri';
-
-  return date.toLocaleDateString('it-IT', {
-    day: 'numeric',
-    month: 'long',
-  });
-};
-
-// ⭐ COMPONENTE PRINCIPALE (MODIFICATO)
+// ⭐ COMPONENTE PRINCIPALE
 const TrackerNutrizionaleVegano = () => {
   const { user, api } = useAuth();
 
   // Stati
   const [alimenti, setAlimenti] = useState(ALIMENTI_FALLBACK);
-  const [isLoadingAlimenti, setIsLoadingAlimenti] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [usaMongoDB, setUsaMongoDB] = useState(false);
   const [numeroAlimentiPersonali, setNumeroAlimentiPersonali] = useState(0);
 
-  const [pasti, setPasti] = useState(PASTI_VUOTI);
+  const [pasti, setPasti] = useState({
+    colazione: [],
+    spuntinoMattina: [],
+    pranzo: [],
+    spuntinoPomeriggio: [],
+    cena: [],
+  });
 
-  // Stati per data e salvataggio
-  const [dataSelezionata, setDataSelezionata] = useState(new Date());
-  const [isLoadingTracker, setIsLoadingTracker] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Stati modale (invariati)
   const [modalePasto, setModalePasto] = useState(null);
   const [alimentoSelezionato, setAlimentoSelezionato] = useState('');
   const [quantita, setQuantita] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Obiettivi (invariato)
+  // Obiettivi (usa quelli del profilo utente se disponibili)
   const obiettivi = user?.obiettivi || {
     proteine: 77,
     carboidrati: 280,
@@ -360,53 +318,63 @@ const TrackerNutrizionaleVegano = () => {
     calorie: 2200,
   };
 
-  // Carica alimenti da MongoDB (solo al cambio utente)
+  // Carica alimenti da MongoDB all'avvio
   useEffect(() => {
     caricaAlimenti();
   }, [user]);
 
-  // Carica i dati del tracker (al cambio utente o data)
-  useEffect(() => {
-    if (user) {
-      caricaTrackerDelGiorno(dataSelezionata);
-    } else {
-      // Se l'utente fa logout, resetta i pasti
-      setPasti(PASTI_VUOTI);
-      setIsLoadingTracker(false);
-    }
-  }, [user, dataSelezionata]);
-
   const caricaAlimenti = async () => {
     try {
-      setIsLoadingAlimenti(true);
+      setLoading(true);
       console.log('🔄 Caricamento alimenti...');
 
+      // Carica alimenti pubblici
       const publicResponse = await api.get('/alimenti');
-      let alimentiPubblici = publicResponse.data?.alimenti || {};
+      console.log('📦 Alimenti pubblici:', publicResponse.data);
 
+      let alimentiPubblici = {};
+      if (publicResponse.data?.alimenti) {
+        alimentiPubblici = publicResponse.data.alimenti;
+      }
+
+      // Se utente loggato, carica anche alimenti personalizzati
       if (user) {
         try {
           const myResponse = await api.get('/alimenti/miei');
-          const alimentiPersonali = myResponse.data?.alimenti || {};
-          const numeroPersonali = Object.keys(alimentiPersonali).length;
-          setNumeroAlimentiPersonali(numeroPersonali);
+          console.log('👤 Alimenti personalizzati:', myResponse.data);
 
-          setAlimenti({ ...alimentiPubblici, ...alimentiPersonali });
-          setUsaMongoDB(true);
-          console.log(
-            `✅ Caricati ${
-              Object.keys(alimentiPubblici).length
-            } pubblici + ${numeroPersonali} personalizzati`
-          );
-          return;
+          if (myResponse.data?.alimenti) {
+            const alimentiPersonali = myResponse.data.alimenti;
+            const numeroPersonali = Object.keys(alimentiPersonali).length;
+            setNumeroAlimentiPersonali(numeroPersonali);
+
+            // Combina alimenti pubblici e personalizzati
+            // Gli alimenti personalizzati sovrascrivono quelli pubblici con lo stesso nome
+            const tuttiAlimenti = {
+              ...alimentiPubblici,
+              ...alimentiPersonali,
+            };
+
+            setAlimenti(tuttiAlimenti);
+            setUsaMongoDB(true);
+
+            console.log(
+              `✅ Caricati ${
+                Object.keys(alimentiPubblici).length
+              } pubblici + ${numeroPersonali} personalizzati`
+            );
+            return;
+          }
         } catch (error) {
           console.warn(
             '⚠️ Errore caricamento alimenti personalizzati:',
             error.message
           );
+          // Continua con solo alimenti pubblici
         }
       }
 
+      // Se arriviamo qui, usa solo alimenti pubblici
       if (Object.keys(alimentiPubblici).length > 0) {
         setAlimenti(alimentiPubblici);
         setUsaMongoDB(true);
@@ -426,92 +394,12 @@ const TrackerNutrizionaleVegano = () => {
       setUsaMongoDB(false);
       setNumeroAlimentiPersonali(0);
     } finally {
-      setIsLoadingAlimenti(false);
+      setLoading(false);
     }
   };
 
-  // ⭐ [NUOVO] Carica i pasti salvati per il giorno selezionato
-  const caricaTrackerDelGiorno = async (data) => {
-    setIsLoadingTracker(true);
-    setIsInitialLoad(true); // Impedisce salvataggio al caricamento
-    const dataStringa = formattaData(data);
-    console.log(`🔄 Caricamento tracker per il ${dataStringa}...`);
-
-    try {
-      const response = await api.get(`/tracker/${dataStringa}`);
-      if (response.data && response.data.pasti) {
-        setPasti(response.data.pasti);
-        console.log(`✅ Dati tracker caricati per ${dataStringa}`);
-      } else {
-        // Nessun dato per oggi, resetta
-        setPasti(PASTI_VUOTI);
-        console.log(
-          `ℹ️ Nessun dato trovato per ${dataStringa}, inizio giornata.`
-        );
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        // 404 è normale, significa che non c'è ancora un tracker per quel giorno
-        setPasti(PASTI_VUOTI);
-        console.log(
-          `ℹ️ Nessun dato (404) per ${dataStringa}, inizio giornata.`
-        );
-      } else {
-        console.error('❌ Errore caricamento tracker:', error.message);
-        // Potresti voler gestire l'errore in modo diverso, es. mostrare un toast
-      }
-    } finally {
-      setIsLoadingTracker(false);
-      // Aspetta un attimo prima di abilitare il salvataggio
-      setTimeout(() => setIsInitialLoad(false), 500);
-    }
-  };
-
-  // ⭐ [NUOVO] Hook per il salvataggio automatico (debounced)
-  const saveTimeoutRef = useRef(null);
-
-  const salvaTrackerDebounced = useCallback(() => {
-    // Pulisci timeout precedente
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Imposta un nuovo timeout
-    saveTimeoutRef.current = setTimeout(async () => {
-      if (isInitialLoad) return; // Non salvare durante il caricamento iniziale
-
-      setIsSaving(true);
-      const dataStringa = formattaData(dataSelezionata);
-      console.log(`💾 Salvataggio dati per ${dataStringa}...`);
-
-      try {
-        // Uso POST per 'upsert' (crea o aggiorna)
-        await api.post('/tracker', { data: dataStringa, pasti: pasti });
-        console.log('✅ Dati salvati');
-      } catch (error) {
-        console.error('❌ Errore salvataggio tracker:', error);
-      } finally {
-        setIsSaving(false);
-      }
-    }, 1500); // Aspetta 1.5s dall'ultima modifica prima di salvare
-  }, [pasti, dataSelezionata, api, isInitialLoad]);
-
-  // Triggera il salvataggio debounced ogni volta che 'pasti' cambia
-  useEffect(() => {
-    if (isInitialLoad) return; // Non salvare al primo caricamento
-    salvaTrackerDebounced();
-
-    // Cleanup del timeout se il componente viene smontato
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [pasti, isInitialLoad, salvaTrackerDebounced]);
-
-  // Calcola totali giornalieri (invariato)
+  // Calcola totali giornalieri
   const totaliGiornalieri = useMemo(() => {
-    // ... (stesso contenuto di prima)
     let totali = {
       proteine: 0,
       carboidrati: 0,
@@ -542,7 +430,6 @@ const TrackerNutrizionaleVegano = () => {
     return totali;
   }, [pasti, alimenti]);
 
-  // Funzioni aggiungi/rimuovi alimento (invariate)
   const aggiungiAlimento = () => {
     if (!alimentoSelezionato || !modalePasto) return;
     setPasti((prev) => ({
@@ -565,9 +452,7 @@ const TrackerNutrizionaleVegano = () => {
     }));
   };
 
-  // Alimenti filtrati per modale (invariato)
   const alimentiFiltrati = useMemo(() => {
-    // ... (stesso contenuto di prima)
     return Object.entries(alimenti).filter(([nome, alimento]) => {
       if (!modalePasto) return false;
 
@@ -596,22 +481,8 @@ const TrackerNutrizionaleVegano = () => {
     });
   }, [alimenti, modalePasto, searchTerm]);
 
-  // ⭐ [NUOVO] Funzione per cambiare giorno
-  const cambiaGiorno = (giorni) => {
-    setDataSelezionata((dataAttuale) => {
-      const nuovaData = new Date(dataAttuale);
-      nuovaData.setDate(nuovaData.getDate() + giorni);
-      return nuovaData;
-    });
-  };
-
-  const vaiAdOggi = () => {
-    setDataSelezionata(new Date());
-  };
-
   // Loading
-  if (isLoadingAlimenti) {
-    // ... (stesso contenuto di prima)
+  if (loading) {
     return (
       <div className='min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center'>
         <div className='text-center'>
@@ -634,29 +505,11 @@ const TrackerNutrizionaleVegano = () => {
       <div className='max-w-7xl mx-auto'>
         {/* Header */}
         <div className='text-center mb-6'>
-          {/* ⭐ [MODIFICATO] Navigazione Data */}
-          <div className='flex items-center justify-center gap-2 mb-3'>
-            <button
-              onClick={() => cambiaGiorno(-1)}
-              className='p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100'
-            >
-              <ChevronLeft className='w-5 h-5 text-gray-700' />
-            </button>
-            <button
-              onClick={vaiAdOggi}
-              className='px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 flex items-center gap-2'
-            >
-              <CalendarDays className='w-5 h-5 text-green-600' />
-              <h1 className='text-2xl md:text-3xl font-bold text-gray-800'>
-                {formattaDataUI(dataSelezionata)}
-              </h1>
-            </button>
-            <button
-              onClick={() => cambiaGiorno(1)}
-              className='p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100'
-            >
-              <ChevronRight className='w-5 h-5 text-gray-700' />
-            </button>
+          <div className='flex items-center justify-center gap-3 mb-3'>
+            <Calendar className='w-10 h-10 text-green-600' />
+            <h1 className='text-3xl md:text-4xl font-bold text-gray-800'>
+              Tracker Nutrizionale Vegano
+            </h1>
           </div>
           <p className='text-gray-600 text-sm'>
             Monitora tutti i macro e micronutrienti • Database completo
@@ -675,7 +528,6 @@ const TrackerNutrizionaleVegano = () => {
                 </p>
               </div>
             ) : (
-              // ... (status offline invariato)
               <div className='bg-yellow-100 border border-yellow-300 rounded-lg px-4 py-2 inline-flex items-center gap-2'>
                 <AlertCircle className='w-4 h-4 text-yellow-600' />
                 <p className='text-xs text-yellow-800 font-medium'>
@@ -692,17 +544,6 @@ const TrackerNutrizionaleVegano = () => {
             >
               <RefreshCw className='w-4 h-4 text-gray-600' />
             </button>
-
-            {/* ⭐ [NUOVO] Indicatore Salvataggio */}
-            {isSaving && (
-              <div
-                className='flex items-center gap-1 text-gray-500'
-                title='Salvataggio...'
-              >
-                <Save className='w-4 h-4 animate-pulse' />
-                <span className='text-xs'>Salvo...</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -710,67 +551,57 @@ const TrackerNutrizionaleVegano = () => {
         <div className='grid lg:grid-cols-3 gap-6'>
           {/* Colonna Pasti */}
           <div className='lg:col-span-2 space-y-4'>
-            {/* ⭐ [MODIFICATO] Mostra loading se sta caricando il tracker */}
-            {isLoadingTracker ? (
-              <div className='h-96 flex items-center justify-center bg-white rounded-xl shadow-md'>
-                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-green-600'></div>
-              </div>
-            ) : (
-              <>
-                <PastoCard
-                  titolo='☀️ Colazione'
-                  tipoPasto='colazione'
-                  icona={Coffee}
-                  pasti={pasti}
-                  alimenti={alimenti}
-                  setModalePasto={setModalePasto}
-                  rimuoviAlimento={rimuoviAlimento}
-                />
-                <PastoCard
-                  titolo='🍎 Spuntino Mattina'
-                  tipoPasto='spuntinoMattina'
-                  icona={Apple}
-                  pasti={pasti}
-                  alimenti={alimenti}
-                  setModalePasto={setModalePasto}
-                  rimuoviAlimento={rimuoviAlimento}
-                />
-                <PastoCard
-                  titolo='🍽️ Pranzo'
-                  tipoPasto='pranzo'
-                  icona={Utensils}
-                  pasti={pasti}
-                  alimenti={alimenti}
-                  setModalePasto={setModalePasto}
-                  rimuoviAlimento={rimuoviAlimento}
-                />
-                <PastoCard
-                  titolo='🍪 Spuntino Pomeriggio'
-                  tipoPasto='spuntinoPomeriggio'
-                  icona={Cookie}
-                  pasti={pasti}
-                  alimenti={alimenti}
-                  setModalePasto={setModalePasto}
-                  rimuoviAlimento={rimuoviAlimento}
-                />
-                <PastoCard
-                  titolo='🌙 Cena'
-                  tipoPasto='cena'
-                  icona={Moon}
-                  pasti={pasti}
-                  alimenti={alimenti}
-                  setModalePasto={setModalePasto}
-                  rimuoviAlimento={rimuoviAlimento}
-                />
-              </>
-            )}
+            <PastoCard
+              titolo='☀️ Colazione'
+              tipoPasto='colazione'
+              icona={Coffee}
+              pasti={pasti}
+              alimenti={alimenti}
+              setModalePasto={setModalePasto}
+              rimuoviAlimento={rimuoviAlimento}
+            />
+            <PastoCard
+              titolo='🍎 Spuntino Mattina'
+              tipoPasto='spuntinoMattina'
+              icona={Apple}
+              pasti={pasti}
+              alimenti={alimenti}
+              setModalePasto={setModalePasto}
+              rimuoviAlimento={rimuoviAlimento}
+            />
+            <PastoCard
+              titolo='🍽️ Pranzo'
+              tipoPasto='pranzo'
+              icona={Utensils}
+              pasti={pasti}
+              alimenti={alimenti}
+              setModalePasto={setModalePasto}
+              rimuoviAlimento={rimuoviAlimento}
+            />
+            <PastoCard
+              titolo='🍪 Spuntino Pomeriggio'
+              tipoPasto='spuntinoPomeriggio'
+              icona={Cookie}
+              pasti={pasti}
+              alimenti={alimenti}
+              setModalePasto={setModalePasto}
+              rimuoviAlimento={rimuoviAlimento}
+            />
+            <PastoCard
+              titolo='🌙 Cena'
+              tipoPasto='cena'
+              icona={Moon}
+              pasti={pasti}
+              alimenti={alimenti}
+              setModalePasto={setModalePasto}
+              rimuoviAlimento={rimuoviAlimento}
+            />
           </div>
 
-          {/* Colonna Riepilogo (INVARIATA) */}
+          {/* Colonna Riepilogo */}
           <div className='space-y-4'>
             {/* Card Totali */}
             <div className='bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white'>
-              {/* ... (contenuto invariato) */}
               <div className='flex items-center gap-2 mb-4'>
                 <Activity className='w-6 h-6' />
                 <h2 className='text-xl font-bold'>Totali Giornalieri</h2>
@@ -805,7 +636,6 @@ const TrackerNutrizionaleVegano = () => {
 
             {/* Card Progressi */}
             <div className='bg-white rounded-xl shadow-md p-5'>
-              {/* ... (contenuto invariato) */}
               <h3 className='text-lg font-bold mb-4 text-gray-800'>
                 📊 Progressi Nutrienti
               </h3>
@@ -855,10 +685,9 @@ const TrackerNutrizionaleVegano = () => {
               />
             </div>
 
-            {/* Info Utente (INVARIATO) */}
+            {/* Info Utente */}
             {user && (
               <div className='bg-blue-50 border border-blue-200 rounded-xl p-4'>
-                {/* ... (contenuto invariato) */}
                 <div className='flex items-center gap-2 mb-2'>
                   <div className='w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm'>
                     {user.nome?.charAt(0).toUpperCase()}
@@ -877,11 +706,10 @@ const TrackerNutrizionaleVegano = () => {
           </div>
         </div>
 
-        {/* Modal Aggiungi Alimento (INVARIATO) */}
+        {/* Modal Aggiungi Alimento */}
         {modalePasto && (
           <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fadeIn'>
             <div className='bg-white rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl'>
-              {/* ... (contenuto invariato) */}
               <h2 className='text-2xl font-bold mb-4 text-gray-800'>
                 Aggiungi alimento
               </h2>
@@ -1008,9 +836,8 @@ const TrackerNutrizionaleVegano = () => {
           </div>
         )}
 
-        {/* Footer Info (INVARIATO) */}
+        {/* Footer Info */}
         <div className='text-center text-gray-600 mt-6 text-sm space-y-1'>
-          {/* ... (contenuto invariato) */}
           <div className='flex items-center justify-center gap-4'>
             <span>💾 {usaMongoDB ? 'MongoDB' : 'Database locale'}</span>
             <span>•</span>

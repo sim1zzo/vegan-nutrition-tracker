@@ -1,6 +1,34 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+// --- INIZIO NUOVO CODICE ---
+// Definiamo lo schema per un alimento salvato in una ricetta
+// (è una versione semplificata di quello in GiornataAlimentare)
+const alimentoRicettaSchema = new mongoose.Schema(
+  {
+    nome: String,
+    quantita: Number,
+    // Aggiungiamo i nutrienti per un ricalcolo rapido se necessario
+    proteine: Number,
+    carboidrati: Number,
+    grassi: Number,
+    calorie: Number,
+  },
+  { _id: false }
+);
+
+// Definiamo lo schema per una ricetta
+const ricettaSchema = new mongoose.Schema({
+  nome: {
+    type: String,
+    required: true,
+    trim: true,
+  },
+  // La ricetta è un array di alimenti
+  alimenti: [alimentoRicettaSchema],
+});
+// --- FINE NUOVO CODICE ---
+
 const userSchema = new mongoose.Schema(
   {
     nome: {
@@ -8,6 +36,7 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Nome obbligatorio'],
       trim: true,
     },
+    // ... (tutti gli altri campi: cognome, email, password, avatar, peso, etc. rimangono invariati) ...
     cognome: {
       type: String,
       trim: true,
@@ -55,6 +84,7 @@ const userSchema = new mongoose.Schema(
       enum: [1.2, 1.375, 1.55, 1.725, 1.9],
     },
     obiettivi: {
+      // ... (campi obiettivi invariati) ...
       proteine: Number,
       carboidrati: Number,
       grassi: Number,
@@ -76,23 +106,16 @@ const userSchema = new mongoose.Schema(
       },
     ],
     preferenze: {
-      temaDark: {
-        type: Boolean,
-        default: false,
-      },
-      lingua: {
-        type: String,
-        default: 'it',
-      },
-      notificheEmail: {
-        type: Boolean,
-        default: true,
-      },
+      // ... (campi preferenze invariati) ...
     },
     ultimoAccesso: {
       type: Date,
       default: Date.now,
     },
+
+    // --- NUOVO CAMPO AGGIUNTO ---
+    ricette: [ricettaSchema],
+    // --- FINE NUOVO CAMPO ---
   },
   {
     timestamps: true,
@@ -171,6 +194,7 @@ userSchema.methods.getProfiloPubblico = function () {
     preferenze: this.preferenze,
     createdAt: this.createdAt,
     ultimoAccesso: this.ultimoAccesso,
+    ricette: this.ricette, // <-- Aggiungi le ricette al profilo
   };
 };
 

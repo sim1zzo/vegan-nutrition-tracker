@@ -5,6 +5,7 @@ import connectDB from './config/database.js';
 import authRoutes from './routes/auth.js';
 import giornateRoutes from './routes/giornate.js';
 import alimentiRoutes from './routes/alimenti.js';
+import ricetteRoutes from './routes/ricette.js'; // <-- 1. IMPORTA
 
 // Connetti DB
 connectDB();
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/giornate', giornateRoutes);
 app.use('/api/alimenti', alimentiRoutes);
+app.use('/api/ricette', ricetteRoutes); // <-- 2. AGGIUNGI
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom'; // <-- IMPORTA Link e useLocation
+import { Link, useLocation } from 'react-router-dom';
 import {
   User,
   LogOut,
@@ -11,14 +11,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const Header = () => {
-  // <-- RIMOSSE LE PROPS 'onNavigate' e 'paginaAttiva'
   const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
-  const location = useLocation(); // <-- Hook per sapere l'URL corrente
-  const paginaAttiva = location.pathname; // Es: "/", "/profilo", ecc.
+  const location = useLocation();
+  const paginaAttiva = location.pathname;
 
-  // Chiudi menu cliccando fuori (invariato)
+  // Chiudi menu cliccando fuori
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -29,7 +28,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Genera iniziali per avatar (invariato)
+  // Genera iniziali per avatar
   const getInitials = () => {
     if (!user) return '?';
     const nome = user.nome || '';
@@ -40,17 +39,16 @@ const Header = () => {
     );
   };
 
-  // Ottieni nome completo (invariato)
+  // Ottieni nome completo
   const getNomeCompleto = () => {
     if (!user) return 'Ospite';
     return `${user.nome} ${user.cognome || ''}`.trim();
   };
 
-  // Helper per lo stile del menu (invariato)
+  // Helper per lo stile del menu
   const getMenuClass = (path) => {
     const base =
       'w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3';
-    // Compara con il path
     if (path === paginaAttiva) {
       return `${base} bg-green-50 text-green-700 font-semibold`;
     }
@@ -58,18 +56,16 @@ const Header = () => {
   };
 
   if (!user) {
-    return null;
+    return null; // Non mostrare l'header se l'utente non è loggato
   }
 
   return (
-    <header className='bg-white shadow-sm border-b border-gray-200'>
+    <header className='bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40'>
       <div className='max-w-7xl mx-auto px-4 py-3'>
         <div className='flex items-center justify-between'>
           {/* Logo/Titolo e Navigazione Principale */}
           <div className='flex items-center gap-3'>
             <Link to='/' className='flex items-center gap-3'>
-              {' '}
-              {/* <-- USA Link */}
               <div className='w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center'>
                 <span className='text-white text-xl font-bold'>🌱</span>
               </div>
@@ -80,7 +76,7 @@ const Header = () => {
               </div>
             </Link>
 
-            {/* Navigazione Desktop (USA Link) */}
+            {/* Navigazione Desktop */}
             <nav className='hidden md:flex items-center gap-2 ml-6'>
               <Link
                 to='/'
@@ -125,24 +121,40 @@ const Header = () => {
                   getInitials()
                 )}
               </div>
-              {/* ... (Info utente e Chevron) ... */}
+              {/* Info Utente */}
+              <div className='hidden md:block text-left'>
+                <div className='text-sm font-semibold text-gray-800'>
+                  {getNomeCompleto()}
+                </div>
+                <div className='text-xs text-gray-500'>{user.email}</div>
+              </div>
+              <ChevronDown
+                className={`w-4 h-4 text-gray-500 transition-transform ${
+                  menuOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
-            {/* Dropdown Menu (USA Link) */}
+            {/* Dropdown Menu */}
             {menuOpen && (
               <div className='absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50'>
-                {/* Info Profilo (invariato) */}
-                <div className='px-4 py-3 border-b border-gray-100'>
-                  {/* ... */}
+                {/* Info Profilo (visibile solo su mobile) */}
+                <div className='px-4 py-3 border-b border-gray-100 md:hidden'>
+                  <div className='font-semibold text-gray-800'>
+                    {getNomeCompleto()}
+                  </div>
+                  <div className='text-sm text-gray-500 truncate'>
+                    {user.email}
+                  </div>
                 </div>
 
-                {/* Menu Items (MODIFICATO per usare Link) */}
+                {/* Menu Items */}
                 <div className='py-1'>
                   {/* Link per navigazione mobile/compatta */}
                   <Link
                     to='/'
                     onClick={() => setMenuOpen(false)}
-                    className={`${getMenuClass('/')} md:hidden`} // Nascondi su desktop
+                    className={`${getMenuClass('/')} md:hidden`}
                   >
                     <CheckSquare className='w-4 h-4' />
                     Tracker
@@ -150,7 +162,7 @@ const Header = () => {
                   <Link
                     to='/alimenti'
                     onClick={() => setMenuOpen(false)}
-                    className={`${getMenuClass('/alimenti')} md:hidden`} // Nascondi su desktop
+                    className={`${getMenuClass('/alimenti')} md:hidden`}
                   >
                     <Package className='w-4 h-4' />I Miei Alimenti
                   </Link>
@@ -164,7 +176,6 @@ const Header = () => {
                     <User className='w-4 h-4' />
                     Profilo
                   </Link>
-
                   <Link
                     to='/impostazioni'
                     onClick={() => setMenuOpen(false)}
@@ -175,7 +186,7 @@ const Header = () => {
                   </Link>
                 </div>
 
-                {/* Logout (invariato) */}
+                {/* Logout */}
                 <div className='border-t border-gray-100 pt-1'>
                   <button
                     onClick={() => {

@@ -257,7 +257,7 @@ const BarraProgresso = ({ label, valore, obiettivo, unita = 'g' }) => {
       <div className='flex justify-between items-center mb-1'>
         <span className='text-sm font-semibold text-gray-700'>{label}</span>
         <span className={`text-sm font-medium ${testoColore}`}>
-          {valore.toFixed(1)}/{obiettivo} {unita}
+          {valore.toFixed(1)}/{obiettivo.toFixed(1)} {unita}
         </span>
       </div>
       <div className='w-full bg-gray-200 rounded-full h-3 overflow-hidden'>
@@ -852,7 +852,7 @@ const TrackerNutrizionaleVegano = () => {
             )}
           </div>
           <p className='text-xs text-gray-500'>
-            Tracker Nutrizionale Vegano © 2025 • Creato da  Simone Izzo
+            Tracker Nutrizionale Vegano © 2025 • Creato da Simone Izzo
           </p>
         </div>
       </div>

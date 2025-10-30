@@ -131,9 +131,12 @@ userSchema.methods.calcolaObiettivi = function () {
   const tdee = bmr * livello;
 
   this.obiettivi = {
-    proteine: peso * 1.1,
-    carboidrati: (tdee * 0.6) / 4,
-    grassi: (tdee * 0.25) / 9,
+    // Arrotonda i grammi a 1 decimale
+    proteine: parseFloat((peso * 1.1).toFixed(1)),
+    carboidrati: parseFloat(((tdee * 0.6) / 4).toFixed(1)),
+    grassi: parseFloat(((tdee * 0.25) / 9).toFixed(1)),
+
+    // Valori che erano già puliti
     fibre: 35,
     ferro: this.sesso === 'F' ? 18 : 14,
     calcio: 1000,
@@ -143,7 +146,9 @@ userSchema.methods.calcolaObiettivi = function () {
     omega3: 1.6,
     iodio: 150,
     zinco: this.sesso === 'F' ? 8 : 11,
-    calorie: tdee,
+
+    // Arrotonda le calorie all'intero più vicino
+    calorie: Math.round(tdee),
   };
 
   return this.obiettivi;

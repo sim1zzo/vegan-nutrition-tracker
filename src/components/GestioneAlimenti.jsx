@@ -10,7 +10,7 @@ import {
   Lock,
   AlertTriangle,
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; //
 
 // Stato iniziale pulito per il form
 const initialState = {
@@ -33,8 +33,13 @@ const initialState = {
   isPublico: false, // Flag per la visibilità
 };
 
-const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
-  const { api } = useAuth();
+/**
+ * Pagina per la gestione (CRUD) degli alimenti personalizzati dell'utente.
+ * Recupera i dati da /api/alimenti/miei e permette creazione/modifica/eliminazione.
+ */
+const GestioneAlimenti = ({ onAlimentoCreato }) => {
+  // onClose non è più necessario
+  const { api } = useAuth(); //
   const [alimenti, setAlimenti] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalAperto, setModalAperto] = useState(false);
@@ -52,9 +57,9 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
   const caricaAlimenti = async () => {
     try {
       setLoading(true);
-      // La rotta 'miei' ora restituisce un array completo
+      // La rotta 'miei' ora restituisce l'array completo degli alimenti dell'utente
       const response = await api.get('/alimenti/miei');
-      setAlimenti(response.data.alimentiArray || []);
+      setAlimenti(response.data.alimentiArray || []); //
     } catch (error) {
       console.error('Errore caricamento alimenti:', error);
       setError('Errore nel caricamento degli alimenti');
@@ -116,7 +121,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
       if (alimentoCorrente) {
         // UPDATE
         const response = await api.put(
-          `/alimenti/${alimentoCorrente._id}`,
+          `/alimenti/${alimentoCorrente._id}`, //
           datiDaInviare
         );
         setAlimenti(
@@ -126,7 +131,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
         );
       } else {
         // CREATE
-        const response = await api.post('/alimenti', datiDaInviare);
+        const response = await api.post('/alimenti', datiDaInviare); //
         setAlimenti([...alimenti, response.data.alimento]);
         onAlimentoCreato?.(response.data.alimento);
       }
@@ -145,7 +150,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
       return;
 
     try {
-      await api.delete(`/alimenti/${id}`);
+      await api.delete(`/alimenti/${id}`); //
       setAlimenti(alimenti.filter((a) => a._id !== id));
     } catch (error) {
       setError("Errore nell'eliminazione dell'alimento");
@@ -191,7 +196,7 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
   return (
     <div className='min-h-screen bg-gray-50 p-6'>
       <div className='max-w-6xl mx-auto'>
-        {/* Header */}
+        {/* Header di Pagina */}
         <div className='bg-white rounded-lg shadow-sm p-6 mb-6'>
           <div className='flex items-center justify-between flex-wrap gap-4'>
             <div className='flex items-center gap-3'>
@@ -215,19 +220,12 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
                 <Plus className='w-5 h-5' />
                 Nuovo Alimento
               </button>
-              {onClose && (
-                <button
-                  onClick={onClose}
-                  className='px-4 py-2 text-gray-600 hover:text-gray-800'
-                >
-                  <X className='w-6 h-6' />
-                </button>
-              )}
+              {/* Il pulsante onClose è stato rimosso, la navigazione avviene tramite Header */}
             </div>
           </div>
         </div>
 
-        {/* Error Message */}
+        {/* Messaggio di Errore */}
         {error && (
           <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4'>
             {error}
@@ -383,6 +381,13 @@ const GestioneAlimenti = ({ onClose, onAlimentoCreato }) => {
             </div>
 
             <form onSubmit={handleSubmit} className='p-6 space-y-6'>
+              {/* Messaggio di errore inline per il modal */}
+              {error && (
+                <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg'>
+                  {error}
+                </div>
+              )}
+
               {/* Nome e Categoria */}
               <div className='grid md:grid-cols-2 gap-4'>
                 <div>

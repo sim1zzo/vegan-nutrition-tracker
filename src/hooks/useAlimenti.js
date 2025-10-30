@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-
-// Import alimenti hardcoded come fallback
 import { ALIMENTI_HARDCODED } from '../data/alimentiHardcoded';
 
 /**
  * Hook per caricare alimenti dal backend MongoDB
- * Con fallback agli alimenti hardcoded se il server non è disponibile
+ * Con fallback automatico agli alimenti hardcoded se il server non è disponibile
  */
 export const useAlimenti = (filtri = {}) => {
   const [alimenti, setAlimenti] = useState(ALIMENTI_HARDCODED);
@@ -38,7 +36,7 @@ export const useAlimenti = (filtri = {}) => {
       if (response.data.success) {
         setAlimenti(response.data.alimenti);
         setUseHardcoded(false);
-        console.log('✅ Alimenti caricati dal backend');
+        console.log('✅ Alimenti caricati dal backend MongoDB');
       }
     } catch (err) {
       console.warn(
@@ -63,7 +61,9 @@ export const useAlimenti = (filtri = {}) => {
       }
 
       const response = await axios.post('/api/alimenti', datiAlimento, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (response.data.success) {
@@ -72,6 +72,7 @@ export const useAlimenti = (filtri = {}) => {
         return { success: true, alimento: response.data.alimento };
       }
     } catch (err) {
+      console.error('Errore aggiunta alimento custom:', err);
       return {
         success: false,
         message: err.response?.data?.message || err.message,
@@ -81,14 +82,13 @@ export const useAlimenti = (filtri = {}) => {
 
   const cercaAlimenti = async (query) => {
     try {
-      const response = await axios.get(`/api/alimenti/ricerca?q=${query}`);
-      return response.data.alimenti;
+      const response = await axios.get(`/api/alimenti?search=${query}`);
+      if (response.data.success) {
+        return response.data.alimenti;
+      }
     } catch (err) {
-      console.error('Errore ricerca:', err);
-      // Fallback a ricerca locale
-      return Object.entries(ALIMENTI_HARDCODED)
-        .filter(([nome]) => nome.toLowerCase().includes(query.toLowerCase()))
-        .map(([nome, dati]) => ({ nome, ...dati }));
+      console.error('Errore ricerca alimenti:', err);
+      return {};
     }
   };
 
@@ -97,9 +97,9 @@ export const useAlimenti = (filtri = {}) => {
     loading,
     error,
     useHardcoded,
-    ricarica: caricaAlimenti,
     aggiungiAlimentoCustom,
     cercaAlimenti,
+    ricarica: caricaAlimenti,
   };
 };
 

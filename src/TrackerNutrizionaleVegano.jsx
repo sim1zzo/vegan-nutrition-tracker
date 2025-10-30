@@ -10,8 +10,9 @@ import {
   Trash2,
   Activity,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
-import axios from 'axios';
+import { useAuth } from './context/AuthContext';
 
 // Database alimenti fallback (se MongoDB offline)
 const ALIMENTI_FALLBACK = {
@@ -136,7 +137,7 @@ const ALIMENTI_FALLBACK = {
   },
 };
 
-// ⭐ COMPONENTE PASTO CARD FUORI (fix hooks)
+// ⭐ COMPONENTE PASTO CARD
 const PastoCard = ({
   titolo,
   tipoPasto,
@@ -163,7 +164,7 @@ const PastoCard = ({
   }, [alimentiPasto, alimenti]);
 
   return (
-    <div className='bg-white rounded-xl shadow-md p-4 border-2 border-gray-200'>
+    <div className='bg-white rounded-xl shadow-md p-4 border-2 border-gray-200 hover:border-green-300 transition-colors'>
       <div className='flex items-center justify-between mb-3'>
         <div className='flex items-center gap-2'>
           <Icona className='w-5 h-5 text-green-600' />
@@ -171,7 +172,8 @@ const PastoCard = ({
         </div>
         <button
           onClick={() => setModalePasto(tipoPasto)}
-          className='p-2 bg-green-600 text-white rounded-lg hover:bg-green-700'
+          className='p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors'
+          title='Aggiungi alimento'
         >
           <Plus className='w-4 h-4' />
         </button>
@@ -186,15 +188,18 @@ const PastoCard = ({
             {alimentiPasto.map((item, index) => (
               <div
                 key={index}
-                className='flex justify-between items-center bg-gray-50 p-2 rounded-lg'
+                className='flex justify-between items-center bg-gray-50 p-2 rounded-lg hover:bg-gray-100 transition-colors'
               >
                 <div className='flex-1'>
-                  <div className='font-semibold text-sm'>{item.nome}</div>
+                  <div className='font-semibold text-sm text-gray-800'>
+                    {item.nome}
+                  </div>
                   <div className='text-xs text-gray-600'>{item.quantita}g</div>
                 </div>
                 <button
                   onClick={() => rimuoviAlimento(tipoPasto, index)}
-                  className='p-1 text-red-500 hover:bg-red-100 rounded'
+                  className='p-1 text-red-500 hover:bg-red-100 rounded transition-colors'
+                  title='Rimuovi'
                 >
                   <Trash2 className='w-4 h-4' />
                 </button>
@@ -233,18 +238,25 @@ const PastoCard = ({
   );
 };
 
-// ⭐ COMPONENTE BARRA PROGRESSO FUORI (fix hooks)
+// ⭐ COMPONENTE BARRA PROGRESSO
 const BarraProgresso = ({ label, valore, obiettivo, unita = 'g' }) => {
   const percentuale = Math.min((valore / obiettivo) * 100, 100);
   let colore = 'bg-green-500';
-  if (percentuale < 70) colore = 'bg-red-500';
-  else if (percentuale < 90) colore = 'bg-yellow-500';
+  let testoColore = 'text-green-600';
+
+  if (percentuale < 70) {
+    colore = 'bg-red-500';
+    testoColore = 'text-red-600';
+  } else if (percentuale < 90) {
+    colore = 'bg-yellow-500';
+    testoColore = 'text-yellow-600';
+  }
 
   return (
     <div className='mb-3'>
       <div className='flex justify-between items-center mb-1'>
         <span className='text-sm font-semibold text-gray-700'>{label}</span>
-        <span className='text-sm text-gray-600'>
+        <span className={`text-sm font-medium ${testoColore}`}>
           {valore.toFixed(1)}/{obiettivo} {unita}
         </span>
       </div>
@@ -254,15 +266,27 @@ const BarraProgresso = ({ label, valore, obiettivo, unita = 'g' }) => {
           style={{ width: `${percentuale}%` }}
         />
       </div>
+      {percentuale < 70 && (
+        <div className='flex items-center gap-1 mt-1'>
+          <AlertCircle className='w-3 h-3 text-red-500' />
+          <span className='text-xs text-red-600'>
+            Sotto il 70% dell'obiettivo
+          </span>
+        </div>
+      )}
     </div>
   );
 };
 
+// ⭐ COMPONENTE PRINCIPALE
 const TrackerNutrizionaleVegano = () => {
+  const { user, api } = useAuth();
+
   // Stati
   const [alimenti, setAlimenti] = useState(ALIMENTI_FALLBACK);
   const [loading, setLoading] = useState(true);
   const [usaMongoDB, setUsaMongoDB] = useState(false);
+  const [numeroAlimentiPersonali, setNumeroAlimentiPersonali] = useState(0);
 
   const [pasti, setPasti] = useState({
     colazione: [],
@@ -277,7 +301,8 @@ const TrackerNutrizionaleVegano = () => {
   const [quantita, setQuantita] = useState(100);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const obiettivi = {
+  // Obiettivi (usa quelli del profilo utente se disponibili)
+  const obiettivi = user?.obiettivi || {
     proteine: 77,
     carboidrati: 280,
     grassi: 60,
@@ -293,45 +318,87 @@ const TrackerNutrizionaleVegano = () => {
     calorie: 2200,
   };
 
-  // Carica alimenti da MongoDB
+  // Carica alimenti da MongoDB all'avvio
   useEffect(() => {
-    const caricaAlimenti = async () => {
-      try {
-        console.log('🔄 Tentativo connessione MongoDB...');
-        const response = await axios.get('/api/alimenti', { timeout: 10000 });
-
-        console.log('📦 Risposta ricevuta:', response.data);
-
-        if (
-          response.data &&
-          response.data.alimenti &&
-          Object.keys(response.data.alimenti).length > 0
-        ) {
-          setAlimenti(response.data.alimenti);
-          setUsaMongoDB(true);
-          console.log(
-            '✅ Connesso a MongoDB -',
-            Object.keys(response.data.alimenti).length,
-            'alimenti'
-          );
-        } else {
-          console.warn('⚠️ Risposta API valida ma nessun alimento trovato');
-          setAlimenti(ALIMENTI_FALLBACK);
-          setUsaMongoDB(false);
-        }
-      } catch (error) {
-        console.error('❌ Errore:', error.message);
-        console.warn('⚠️ MongoDB non disponibile, uso alimenti locali');
-        setAlimenti(ALIMENTI_FALLBACK);
-        setUsaMongoDB(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     caricaAlimenti();
-  }, []);
+  }, [user]);
 
+  const caricaAlimenti = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Caricamento alimenti...');
+
+      // Carica alimenti pubblici
+      const publicResponse = await api.get('/alimenti');
+      console.log('📦 Alimenti pubblici:', publicResponse.data);
+
+      let alimentiPubblici = {};
+      if (publicResponse.data?.alimenti) {
+        alimentiPubblici = publicResponse.data.alimenti;
+      }
+
+      // Se utente loggato, carica anche alimenti personalizzati
+      if (user) {
+        try {
+          const myResponse = await api.get('/alimenti/miei');
+          console.log('👤 Alimenti personalizzati:', myResponse.data);
+
+          if (myResponse.data?.alimenti) {
+            const alimentiPersonali = myResponse.data.alimenti;
+            const numeroPersonali = Object.keys(alimentiPersonali).length;
+            setNumeroAlimentiPersonali(numeroPersonali);
+
+            // Combina alimenti pubblici e personalizzati
+            // Gli alimenti personalizzati sovrascrivono quelli pubblici con lo stesso nome
+            const tuttiAlimenti = {
+              ...alimentiPubblici,
+              ...alimentiPersonali,
+            };
+
+            setAlimenti(tuttiAlimenti);
+            setUsaMongoDB(true);
+
+            console.log(
+              `✅ Caricati ${
+                Object.keys(alimentiPubblici).length
+              } pubblici + ${numeroPersonali} personalizzati`
+            );
+            return;
+          }
+        } catch (error) {
+          console.warn(
+            '⚠️ Errore caricamento alimenti personalizzati:',
+            error.message
+          );
+          // Continua con solo alimenti pubblici
+        }
+      }
+
+      // Se arriviamo qui, usa solo alimenti pubblici
+      if (Object.keys(alimentiPubblici).length > 0) {
+        setAlimenti(alimentiPubblici);
+        setUsaMongoDB(true);
+        setNumeroAlimentiPersonali(0);
+        console.log(
+          `✅ Caricati ${
+            Object.keys(alimentiPubblici).length
+          } alimenti pubblici`
+        );
+      } else {
+        throw new Error('Nessun alimento disponibile dal server');
+      }
+    } catch (error) {
+      console.error('❌ Errore caricamento alimenti:', error.message);
+      console.warn('⚠️ Uso alimenti fallback locali');
+      setAlimenti(ALIMENTI_FALLBACK);
+      setUsaMongoDB(false);
+      setNumeroAlimentiPersonali(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcola totali giornalieri
   const totaliGiornalieri = useMemo(() => {
     let totali = {
       proteine: 0,
@@ -388,19 +455,29 @@ const TrackerNutrizionaleVegano = () => {
   const alimentiFiltrati = useMemo(() => {
     return Object.entries(alimenti).filter(([nome, alimento]) => {
       if (!modalePasto) return false;
-      if (modalePasto === 'colazione')
-        return alimento.categoria === 'colazione';
-      if (
+
+      // Filtra per categoria in base al pasto
+      let categoriaMatch = true;
+      if (modalePasto === 'colazione') {
+        categoriaMatch = alimento.categoria === 'colazione';
+      } else if (
         modalePasto === 'spuntinoMattina' ||
         modalePasto === 'spuntinoPomeriggio'
-      )
-        return (
+      ) {
+        categoriaMatch =
           alimento.categoria === 'colazione' ||
-          alimento.categoria === 'spuntino'
-        );
-      if (searchTerm)
-        return nome.toLowerCase().includes(searchTerm.toLowerCase());
-      return true;
+          alimento.categoria === 'spuntino';
+      }
+
+      // Filtra per termine di ricerca
+      if (searchTerm) {
+        const termineMatch = nome
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        return categoriaMatch && termineMatch;
+      }
+
+      return categoriaMatch;
     });
   }, [alimenti, modalePasto, searchTerm]);
 
@@ -410,7 +487,14 @@ const TrackerNutrizionaleVegano = () => {
       <div className='min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center'>
         <div className='text-center'>
           <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4'></div>
-          <p className='text-gray-600'>Caricamento database alimenti...</p>
+          <p className='text-gray-600 font-medium'>
+            Caricamento database alimenti...
+          </p>
+          {user && (
+            <p className='text-sm text-gray-500 mt-2'>
+              Recupero i tuoi alimenti personalizzati
+            </p>
+          )}
         </div>
       </div>
     );
@@ -419,6 +503,7 @@ const TrackerNutrizionaleVegano = () => {
   return (
     <div className='min-h-screen bg-gradient-to-br from-green-50 via-teal-50 to-emerald-50 p-4'>
       <div className='max-w-7xl mx-auto'>
+        {/* Header */}
         <div className='text-center mb-6'>
           <div className='flex items-center justify-center gap-3 mb-3'>
             <Calendar className='w-10 h-10 text-green-600' />
@@ -427,26 +512,44 @@ const TrackerNutrizionaleVegano = () => {
             </h1>
           </div>
           <p className='text-gray-600 text-sm'>
-            Monitora tutti i macro e micronutrienti
+            Monitora tutti i macro e micronutrienti • Database completo
           </p>
 
-          {usaMongoDB ? (
-            <div className='bg-green-100 border border-green-300 rounded-lg p-2 mt-2 max-w-md mx-auto'>
-              <p className='text-xs text-green-800'>
-                ✅ Connesso a MongoDB - {Object.keys(alimenti).length} alimenti
-                disponibili
-              </p>
-            </div>
-          ) : (
-            <div className='bg-yellow-100 border border-yellow-300 rounded-lg p-2 mt-2 max-w-md mx-auto'>
-              <p className='text-xs text-yellow-800'>
-                ⚠️ Backend offline - Usando 7 alimenti locali
-              </p>
-            </div>
-          )}
+          {/* Status Database */}
+          <div className='flex items-center justify-center gap-3 mt-3'>
+            {usaMongoDB ? (
+              <div className='bg-green-100 border border-green-300 rounded-lg px-4 py-2 inline-flex items-center gap-2'>
+                <div className='w-2 h-2 bg-green-500 rounded-full animate-pulse'></div>
+                <p className='text-xs text-green-800 font-medium'>
+                  ✅ Connesso a MongoDB • {Object.keys(alimenti).length}{' '}
+                  alimenti
+                  {numeroAlimentiPersonali > 0 &&
+                    ` (${numeroAlimentiPersonali} personalizzati)`}
+                </p>
+              </div>
+            ) : (
+              <div className='bg-yellow-100 border border-yellow-300 rounded-lg px-4 py-2 inline-flex items-center gap-2'>
+                <AlertCircle className='w-4 h-4 text-yellow-600' />
+                <p className='text-xs text-yellow-800 font-medium'>
+                  ⚠️ Backend offline • Usando {Object.keys(alimenti).length}{' '}
+                  alimenti locali
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={caricaAlimenti}
+              className='p-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors'
+              title='Ricarica alimenti'
+            >
+              <RefreshCw className='w-4 h-4 text-gray-600' />
+            </button>
+          </div>
         </div>
 
+        {/* Grid Principale */}
         <div className='grid lg:grid-cols-3 gap-6'>
+          {/* Colonna Pasti */}
           <div className='lg:col-span-2 space-y-4'>
             <PastoCard
               titolo='☀️ Colazione'
@@ -495,40 +598,43 @@ const TrackerNutrizionaleVegano = () => {
             />
           </div>
 
+          {/* Colonna Riepilogo */}
           <div className='space-y-4'>
+            {/* Card Totali */}
             <div className='bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white'>
               <div className='flex items-center gap-2 mb-4'>
                 <Activity className='w-6 h-6' />
                 <h2 className='text-xl font-bold'>Totali Giornalieri</h2>
               </div>
               <div className='space-y-2 text-sm'>
-                <div className='flex justify-between'>
+                <div className='flex justify-between items-center'>
                   <span>Proteine:</span>
-                  <span className='font-bold'>
+                  <span className='font-bold text-lg'>
                     {totaliGiornalieri.proteine.toFixed(1)}g
                   </span>
                 </div>
-                <div className='flex justify-between'>
+                <div className='flex justify-between items-center'>
                   <span>Carboidrati:</span>
-                  <span className='font-bold'>
+                  <span className='font-bold text-lg'>
                     {totaliGiornalieri.carboidrati.toFixed(1)}g
                   </span>
                 </div>
-                <div className='flex justify-between'>
+                <div className='flex justify-between items-center'>
                   <span>Grassi:</span>
-                  <span className='font-bold'>
+                  <span className='font-bold text-lg'>
                     {totaliGiornalieri.grassi.toFixed(1)}g
                   </span>
                 </div>
-                <div className='flex justify-between'>
+                <div className='flex justify-between items-center border-t border-green-400 pt-2 mt-2'>
                   <span>Calorie:</span>
-                  <span className='font-bold'>
+                  <span className='font-bold text-xl'>
                     {totaliGiornalieri.calorie.toFixed(0)} kcal
                   </span>
                 </div>
               </div>
             </div>
 
+            {/* Card Progressi */}
             <div className='bg-white rounded-xl shadow-md p-5'>
               <h3 className='text-lg font-bold mb-4 text-gray-800'>
                 📊 Progressi Nutrienti
@@ -578,36 +684,62 @@ const TrackerNutrizionaleVegano = () => {
                 unita='mg'
               />
             </div>
+
+            {/* Info Utente */}
+            {user && (
+              <div className='bg-blue-50 border border-blue-200 rounded-xl p-4'>
+                <div className='flex items-center gap-2 mb-2'>
+                  <div className='w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm'>
+                    {user.nome?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className='font-semibold text-blue-900 text-sm'>
+                      {user.nome}
+                    </div>
+                    <div className='text-xs text-blue-600'>
+                      Peso: {user.peso}kg • Att: {user.livelloAttivita}x
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Modal Aggiungi Alimento */}
         {modalePasto && (
-          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-            <div className='bg-white rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto'>
-              <h2 className='text-2xl font-bold mb-4'>Aggiungi alimento</h2>
+          <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-fadeIn'>
+            <div className='bg-white rounded-xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl'>
+              <h2 className='text-2xl font-bold mb-4 text-gray-800'>
+                Aggiungi alimento
+              </h2>
               <div className='space-y-4'>
+                {/* Ricerca */}
                 <div>
-                  <label className='block text-sm font-semibold mb-2'>
-                    Cerca alimento
+                  <label className='block text-sm font-semibold mb-2 text-gray-700'>
+                    🔍 Cerca alimento
                   </label>
                   <input
                     type='text'
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder='Es: lenticchie...'
-                    className='w-full p-2 border-2 border-gray-300 rounded-lg'
+                    placeholder='Es: lenticchie, avena...'
+                    className='w-full p-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all'
+                    autoFocus
                   />
                 </div>
+
+                {/* Select Alimento */}
                 <div>
-                  <label className='block text-sm font-semibold mb-2'>
-                    Alimento ({alimentiFiltrati.length} risultati)
+                  <label className='block text-sm font-semibold mb-2 text-gray-700'>
+                    🍽️ Alimento ({alimentiFiltrati.length} disponibili)
                   </label>
                   <select
                     value={alimentoSelezionato}
                     onChange={(e) => setAlimentoSelezionato(e.target.value)}
-                    className='w-full p-2 border-2 border-gray-300 rounded-lg'
+                    className='w-full p-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all'
                   >
-                    <option value=''>Seleziona...</option>
+                    <option value=''>Seleziona un alimento...</option>
                     {alimentiFiltrati.map(([nome]) => (
                       <option key={nome} value={nome}>
                         {nome}
@@ -615,10 +747,12 @@ const TrackerNutrizionaleVegano = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Quantità */}
                 {alimentoSelezionato && (
                   <div>
-                    <label className='block text-sm font-semibold mb-2'>
-                      Quantità (grammi)
+                    <label className='block text-sm font-semibold mb-2 text-gray-700'>
+                      ⚖️ Quantità (grammi)
                     </label>
                     <input
                       type='number'
@@ -626,28 +760,73 @@ const TrackerNutrizionaleVegano = () => {
                       onChange={(e) => setQuantita(Number(e.target.value))}
                       min='1'
                       step='10'
-                      className='w-full p-2 border-2 border-gray-300 rounded-lg'
+                      className='w-full p-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all'
                     />
-                    <p className='text-xs text-gray-500 mt-1'>
-                      Porzione standard:{' '}
-                      {alimenti[alimentoSelezionato]?.porzione || 100}g
+                    <p className='text-xs text-gray-500 mt-2 flex items-center gap-1'>
+                      💡 Porzione standard:{' '}
+                      <span className='font-semibold'>
+                        {alimenti[alimentoSelezionato]?.porzione || 100}g
+                      </span>
                     </p>
+
+                    {/* Preview Nutrienti */}
+                    <div className='mt-3 bg-gray-50 p-3 rounded-lg'>
+                      <div className='text-xs font-semibold text-gray-600 mb-2'>
+                        Valori nutrizionali per {quantita}g:
+                      </div>
+                      <div className='grid grid-cols-3 gap-2 text-xs'>
+                        <div>
+                          <span className='text-gray-500'>Prot:</span>
+                          <span className='font-bold ml-1'>
+                            {(
+                              (alimenti[alimentoSelezionato]?.proteine || 0) *
+                              (quantita / 100)
+                            ).toFixed(1)}
+                            g
+                          </span>
+                        </div>
+                        <div>
+                          <span className='text-gray-500'>Carb:</span>
+                          <span className='font-bold ml-1'>
+                            {(
+                              (alimenti[alimentoSelezionato]?.carboidrati ||
+                                0) *
+                              (quantita / 100)
+                            ).toFixed(1)}
+                            g
+                          </span>
+                        </div>
+                        <div>
+                          <span className='text-gray-500'>Kcal:</span>
+                          <span className='font-bold ml-1'>
+                            {(
+                              (alimenti[alimentoSelezionato]?.calorie || 0) *
+                              (quantita / 100)
+                            ).toFixed(0)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
-                <div className='flex gap-2'>
+
+                {/* Buttons */}
+                <div className='flex gap-3 pt-2'>
                   <button
                     onClick={() => {
                       setModalePasto(null);
                       setSearchTerm('');
+                      setAlimentoSelezionato('');
+                      setQuantita(100);
                     }}
-                    className='flex-1 p-2 bg-gray-200 rounded-lg hover:bg-gray-300'
+                    className='flex-1 p-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors'
                   >
                     Annulla
                   </button>
                   <button
                     onClick={aggiungiAlimento}
                     disabled={!alimentoSelezionato}
-                    className='flex-1 p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50'
+                    className='flex-1 p-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
                   >
                     Aggiungi
                   </button>
@@ -657,9 +836,24 @@ const TrackerNutrizionaleVegano = () => {
           </div>
         )}
 
-        <div className='text-center text-gray-600 mt-6 text-sm'>
-          💾 {usaMongoDB ? 'MongoDB' : 'Database locale'} •{' '}
-          {Object.keys(alimenti).length} alimenti
+        {/* Footer Info */}
+        <div className='text-center text-gray-600 mt-6 text-sm space-y-1'>
+          <div className='flex items-center justify-center gap-4'>
+            <span>💾 {usaMongoDB ? 'MongoDB' : 'Database locale'}</span>
+            <span>•</span>
+            <span>{Object.keys(alimenti).length} alimenti totali</span>
+            {numeroAlimentiPersonali > 0 && (
+              <>
+                <span>•</span>
+                <span className='text-green-600 font-semibold'>
+                  {numeroAlimentiPersonali} personalizzati
+                </span>
+              </>
+            )}
+          </div>
+          <p className='text-xs text-gray-500'>
+            Tracker Nutrizionale Vegano © 2025
+          </p>
         </div>
       </div>
     </div>
